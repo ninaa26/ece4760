@@ -1,0 +1,11 @@
+# Build output
+build/
+
+# Upstream course demo code — cloned separately, has its own git history
+Hunter-Adams-RP2040-Demos/
+
+# macOS
+.DS_Store
+
+# VS Code / Pico extension local state
+.vscode/
