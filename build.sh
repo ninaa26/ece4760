@@ -33,7 +33,7 @@ fi
 
 BUILD="$HOME/Developer/ECE4760/build/${SRC:t}-$BOARD"
 
-cmake -S "$SRC" -B "$BUILD" -G Ninja -DPICO_BOARD="$BOARD" >/dev/null
+cmake -S "$SRC" -B "$BUILD" -G Ninja -DPICO_BOARD="$BOARD" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON >/dev/null
 cmake --build "$BUILD"
 
 echo
