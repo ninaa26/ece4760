@@ -75,11 +75,19 @@ uint16_t DAC_data ; // output value
 #define sine_table_size 256
 volatile int sin_table[sine_table_size] ;
 
-#define NUM_RECORD_KEYS 9
+// Keys are numbered 1-9, so index N holds key N and slot 0 is simply unused.
+// Sizing these [9] would overflow on key 9.
+#define NUM_RECORD_KEYS 10
 #define MAX_SAMPLES 10000
 
 uint16_t recordings[NUM_RECORD_KEYS][MAX_SAMPLES];
 uint16_t record_length[NUM_RECORD_KEYS];
+
+// FIX 1: this used to be a non-static local inside protothread_core_0.
+// Protothreads resume by jumping into a switch, which skips the declaration's
+// initialiser, and non-static locals do not survive a yield - so its contents
+// were unpredictable. It is shared state, so it belongs at file scope.
+bool recorded[NUM_RECORD_KEYS] = {false};
 
 bool record_mode = false;
 bool recording = false;
@@ -229,7 +237,6 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
     static uint32_t keypad ;
     static int state = NOT_PRESSED ;
     static int possible_key;
-    bool recorded[9] = {false};
 
     while(1) {
 
@@ -282,7 +289,7 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
                             playing = false;
 
                             // Allow keys 1-9 to be recorded again
-                            for (int k = 0; k < 9; k++) {
+                            for (int k = 0; k < NUM_RECORD_KEYS; k++) {
                                 recorded[k] = false;
                             }
                         
