@@ -5,36 +5,113 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// ---- The syllable table -------------------------------------------------
-//
-// Durations and frequencies are chosen to sit inside the cardinal's real
-// range. The swoop is Hunter's published equation; the rest are shaped to
-// match the 2-7 kHz sweeps in the lab handout's spectrogram and should be
-// adjusted by ear once you can hear them.
-//
-// Playback steps one stored sample per millisecond, so a syllable of N ms is
-// stored as N samples and plays for N ms.
+#define SIL(ms) { (ms), 0.f, 0.f, 0.f }      // silence
 
-static const cardinal_syllable_t syllables[] = {
-    // key  ms   start    mid     end     name
-    {  1,  130,  1740.f, 2000.f, 1740.f, "swoop"        },  // Hunter's equation
-    {  2,  130,  2000.f, 4200.f, 7000.f, "chirp up"     },  // the rapid rise
-    {  3,  130,  7000.f, 4200.f, 2000.f, "cheer down"   },  // the classic downslur
-    {  4,   70,  2500.f, 4000.f, 5500.f, "short rise"   },
-    {  5,  220,  6500.f, 4000.f, 1800.f, "long fall"    },
-    {  6,   45,  3000.f, 3400.f, 3000.f, "chip"         },
+// ---------------------------------------------------------------------------
+// Building blocks. The figures in square brackets are the published ones.
+// ---------------------------------------------------------------------------
+
+// [Hunter Adams] 130 ms, 1740 -> 2000 -> 1740
+static const cardinal_segment_t seg_swoop[] = {
+    { 130, 1740.f, 2000.f, 1740.f },
 };
 
-#define N_SYLLABLES ((int)(sizeof(syllables) / sizeof(syllables[0])))
+// [Wisconsin type A] "what": ~0.1 s ascending 2 -> 4 kHz
+static const cardinal_segment_t seg_what_fast[] = {
+    { 100, 2000.f, 3000.f, 4000.f },
+};
 
-int cardinal_syllable_count(void)        { return N_SYLLABLES; }
-const char *cardinal_syllable_name(int i){ return syllables[i].name; }
-int cardinal_syllable_key(int i)         { return syllables[i].key; }
+// [Wisconsin type A] "cheer": ~0.6 s descending 6 -> 2 kHz
+static const cardinal_segment_t seg_cheer_high[] = {
+    { 600, 6000.f, 4000.f, 2000.f },
+};
 
-// Frequency at fraction t (0..1) through a syllable. Two raised-cosine eases,
-// start -> mid over the first half and mid -> end over the second, so the
-// contour is smooth at both ends and at the join.
-static float syllable_freq(const cardinal_syllable_t *s, float t)
+// [Wisconsin type B] "what": ~0.5 s ascending 2 -> 4 kHz
+static const cardinal_segment_t seg_what_slow[] = {
+    { 500, 2000.f, 3000.f, 4000.f },
+};
+
+// [Wisconsin type B] "cheer": ~0.4 s descending 2.5 -> 1 kHz
+static const cardinal_segment_t seg_cheer_low[] = {
+    { 400, 2500.f, 1750.f, 1000.f },
+};
+
+// Sharp "chip" contact note. Shaped, not measured.
+static const cardinal_segment_t seg_chip[] = {
+    {  40, 5000.f, 4000.f, 3000.f },
+};
+
+// ---------------------------------------------------------------------------
+// Complete songs. Cornell Lab: a string of down-slurred or two-parted
+// whistles, a phrase repeated 2-3 times, whole song 2-3 seconds.
+// ---------------------------------------------------------------------------
+
+// "what cheer, cheer, cheer" - Wisconsin type A. 2140 ms.
+static const cardinal_segment_t seg_song_a[] = {
+    { 100, 2000.f, 3000.f, 4000.f },   // what
+    SIL(80),
+    { 600, 6000.f, 4000.f, 2000.f },   // cheer
+    SIL(80),
+    { 600, 6000.f, 4000.f, 2000.f },   // cheer
+    SIL(80),
+    { 600, 6000.f, 4000.f, 2000.f },   // cheer
+};
+
+// "what cheer, cheer" - Wisconsin type B, lower and slower. 1460 ms.
+static const cardinal_segment_t seg_song_b[] = {
+    { 500, 2000.f, 3000.f, 4000.f },   // what
+    SIL(80),
+    { 400, 2500.f, 1750.f, 1000.f },   // cheer
+    SIL(80),
+    { 400, 2500.f, 1750.f, 1000.f },   // cheer
+};
+
+// "birdy birdy birdy" - two-parted whistles, speeding up. 1270 ms.
+static const cardinal_segment_t seg_song_birdy[] = {
+    { 120, 2000.f, 3000.f, 4000.f },   // bir-
+    { 120, 4000.f, 3000.f, 2000.f },   // -dy
+    SIL(140),
+    { 120, 2000.f, 3000.f, 4000.f },
+    { 120, 4000.f, 3000.f, 2000.f },
+    SIL(100),
+    { 120, 2000.f, 3000.f, 4000.f },
+    { 120, 4000.f, 3000.f, 2000.f },
+    SIL(70),
+    { 120, 2000.f, 3000.f, 4000.f },
+    { 120, 4000.f, 3000.f, 2000.f },
+};
+
+#define CALL(k, nm, arr) { (k), (nm), (arr), (int)(sizeof(arr)/sizeof((arr)[0])) }
+
+static const cardinal_call_t calls[] = {
+    CALL(1, "swoop",             seg_swoop      ),
+    CALL(2, "what (fast)",       seg_what_fast  ),
+    CALL(3, "cheer (high fall)", seg_cheer_high ),
+    CALL(4, "what (slow)",       seg_what_slow  ),
+    CALL(5, "cheer (low fall)",  seg_cheer_low  ),
+    CALL(6, "chip",              seg_chip       ),
+    CALL(7, "SONG what-cheer-cheer-cheer", seg_song_a     ),
+    CALL(8, "SONG what-cheer-cheer",       seg_song_b     ),
+    CALL(9, "SONG birdy-birdy-birdy",      seg_song_birdy ),
+};
+
+#define N_CALLS ((int)(sizeof(calls) / sizeof(calls[0])))
+
+int         cardinal_call_count(void)     { return N_CALLS; }
+const char *cardinal_call_name(int i)     { return calls[i].name; }
+int         cardinal_call_key(int i)      { return calls[i].key; }
+
+int cardinal_call_ms(int i)
+{
+    int total = 0;
+    for (int k = 0; k < calls[i].n_seg; k++) total += calls[i].seg[k].ms;
+    return total;
+}
+
+// Pitch at fraction t (0..1) through one segment: two raised-cosine eases,
+// start -> mid then mid -> end, so the contour is smooth at both ends and at
+// the join between them.
+static float segment_freq(const cardinal_segment_t *s, float t)
 {
     float u, ease;
 
@@ -54,30 +131,47 @@ int cardinal_load_presets(uint16_t *recordings, uint16_t *lengths,
 {
     int loaded = 0;
 
-    for (int i = 0; i < N_SYLLABLES; i++) {
-        const cardinal_syllable_t *s = &syllables[i];
+    for (int c = 0; c < N_CALLS; c++) {
+        const cardinal_call_t *call = &calls[c];
+        if (call->key < 0 || call->key >= num_keys) continue;
 
-        if (s->key < 0 || s->key >= num_keys) continue;
+        int written = 0;
 
-        int n = s->ms;                       // one sample per millisecond
-        if (n > max_samples) n = max_samples;
-        if (n < 2) continue;
+        for (int g = 0; g < call->n_seg && written < max_samples; g++) {
+            const cardinal_segment_t *s = &call->seg[g];
 
-        for (int k = 0; k < n; k++) {
-            float t = (float)k / (float)(n - 1);
-            float f = syllable_freq(s, t);
+            int n = s->ms;                       // one sample per millisecond
+            if (n < 1) continue;
+            if (written + n > max_samples) n = max_samples - written;
 
-            // Store what the ADC would have read for this pitch, so playback's
-            // existing adc_to_phase_incr() turns it back into the same
-            // frequency. This is the inverse of that mapping.
-            int adc = (int)((f * 4095.0f / max_freq_hz) + 0.5f);
-            if (adc < 0)    adc = 0;
-            if (adc > 4095) adc = 4095;
+            int silent = (s->f_start == 0.f && s->f_mid == 0.f && s->f_end == 0.f);
 
-            recordings[s->key * max_samples + k] = (uint16_t)adc;
+            for (int k = 0; k < n; k++) {
+                int adc;
+
+                if (silent) {
+                    // Zero increment freezes the oscillator, so nothing moves
+                    // and nothing is heard.
+                    adc = 0;
+                } else {
+                    float t = (n > 1) ? (float)k / (float)(n - 1) : 0.f;
+                    float f = segment_freq(s, t);
+
+                    // Store what the ADC would have read for this pitch, so the
+                    // existing adc_to_phase_incr() on playback turns it back
+                    // into the same frequency. The inverse of that mapping.
+                    adc = (int)((f * 4095.0f / max_freq_hz) + 0.5f);
+                    if (adc < 0)    adc = 0;
+                    if (adc > 4095) adc = 4095;
+                }
+
+                recordings[call->key * max_samples + written + k] = (uint16_t)adc;
+            }
+
+            written += n;
         }
 
-        lengths[s->key] = (uint16_t)n;
+        lengths[call->key] = (uint16_t)written;
         loaded++;
     }
 

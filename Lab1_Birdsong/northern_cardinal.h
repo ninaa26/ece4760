@@ -1,32 +1,43 @@
 /**
- * northern_cardinal.h — synthesised Northern Cardinal syllables
+ * northern_cardinal.h — synthesised Northern Cardinal calls
  *
- * Preloads the recording slots with frequency contours shaped like a cardinal's
- * song, so keys 1-6 hold bird syllables at power-on instead of being empty.
+ * Preloads all nine recording slots with frequency contours shaped like a
+ * cardinal's vocabulary. Keys 1-6 are single syllables; keys 7-9 are complete
+ * multi-syllable songs with the silences built in.
  *
- * This is an ADDITION, not a replacement. Recording over any of these keys
- * works exactly as before and overwrites the preset; the lab's required
- * record / playback / compose path is untouched. At a demo, say which keys are
- * presets and which you recorded - a preset is not a recording, and the
- * checkoff asks you to record a sequence a TA invents on the spot.
+ * This is an ADDITION, not a replacement. Recording over any key works exactly
+ * as before and overwrites the preset; the lab's required record / playback /
+ * compose path is untouched. At a demo, say which keys are presets and which
+ * you recorded - a preset is not a recording, and the checkoff asks you to
+ * record a sequence a TA invents on the spot.
  *
  * SOURCES
  *   V. Hunter Adams, "Synthesizing birdsong via Direct Digital Synthesis"
  *     https://vanhunteradams.com/Pico/Birds/Birdsong_synthesis.html
- *     - the song decomposes into a swoop, a chirp, and silence between them
- *     - swoop: 130 ms, y = -260*sin(-pi*x/5200) + 1740
- *       i.e. 1740 Hz -> 2000 Hz -> 1740 Hz
- *     - chirp: ~130 ms, "moves rapidly from low frequency to high frequency"
- *     - amplitude ramped up and down at the edges of each element
+ *     swoop: 130 ms, y = -260*sin(-pi*x/5200) + 1740, i.e. 1740 -> 2000 -> 1740
+ *     chirp: ~130 ms, "moves rapidly from low frequency to high frequency"
+ *
  *   Birds of the World, "Northern Cardinal - Sounds and Vocal Behavior"
  *     https://birdsoftheworld.org/bow/species/norcar/cur/sounds
- *     - pure-toned whistles, fundamentals roughly 1-8 kHz
- *     - syllables separated by silences under 1 second, sung in a set order
- *   ECE 4760 Lab 1 handout, Fig. 2 spectrogram: sweeps about 2 kHz to 7 kHz
+ *     8-10 song types built from 8-21 syllable types; pure-toned whistles,
+ *     fundamentals roughly 1-8 kHz; syllables separated by silences under 1 s.
+ *     Two measured song types from south-central Wisconsin:
+ *       type A: "what" ~0.1 s ascending 2 -> 4 kHz,
+ *               "cheer" ~0.6 s descending 6 -> 2 kHz
+ *       type B: "what" ~0.5 s ascending 2 -> 4 kHz,
+ *               "cheer" ~0.4 s descending 2.5 -> 1 kHz
  *
- * The swoop below is Hunter's equation exactly. The others are shaped to the
- * ranges above and are meant to be TUNED BY EAR against the Merlin app - treat
- * them as a starting point, not as measured data.
+ *   Cornell Lab, All About Birds - Northern Cardinal Sounds
+ *     https://www.allaboutbirds.org/guide/Northern_Cardinal/sounds
+ *     a string of clear down-slurred or two-parted whistles, often speeding up
+ *     and ending in a trill; songs last 2 to 3 seconds; a phrase is usually
+ *     repeated 2-3 times.
+ *
+ *   ECE 4760 Lab 1 handout, Fig. 2 spectrogram: sweeps about 2 kHz to 7 kHz.
+ *
+ * The swoop and the two Wisconsin song types use the published figures. The
+ * rest are shaped to the same ranges and are meant to be TUNED BY EAR against
+ * the Merlin app - a starting point, not measured data.
  */
 
 #ifndef NORTHERN_CARDINAL_H
@@ -34,38 +45,42 @@
 
 #include <stdint.h>
 
-// One syllable: a frequency contour that starts at f_start, passes through
-// f_mid at the halfway point, and ends at f_end. Both halves are eased with a
-// raised cosine so the pitch never changes direction abruptly.
+// One piece of a call. The pitch runs f_start -> f_mid -> f_end, eased with a
+// raised cosine at each half so it never turns a corner abruptly.
+// All three zero means SILENCE: a phase increment of zero freezes the
+// oscillator, which produces no sound.
 typedef struct {
-    int         key;        // which keypad key to load it onto (1-9)
-    int         ms;         // duration in milliseconds
-    float       f_start;    // Hz
-    float       f_mid;      // Hz at the midpoint
-    float       f_end;      // Hz
-    const char *name;
-} cardinal_syllable_t;
+    int   ms;
+    float f_start;
+    float f_mid;
+    float f_end;
+} cardinal_segment_t;
 
-// How many syllables the table holds.
-int cardinal_syllable_count(void);
+// A call is a list of segments loaded onto one key.
+typedef struct {
+    int                       key;
+    const char               *name;
+    const cardinal_segment_t *seg;
+    int                       n_seg;
+} cardinal_call_t;
 
-// Name of syllable i, for printing at boot.
-const char *cardinal_syllable_name(int i);
-
-// Which key syllable i is loaded onto.
-int cardinal_syllable_key(int i);
+int         cardinal_call_count(void);
+const char *cardinal_call_name(int i);
+int         cardinal_call_key(int i);
+int         cardinal_call_ms(int i);      // total duration in milliseconds
 
 /**
- * Fill the recording slots with the synthesised syllables.
+ * Fill the recording slots with the synthesised calls.
  *
  * recordings   flat pointer to the [keys][max_samples] array
  * lengths      the per-key length array
  * num_keys     first dimension of recordings
  * max_samples  second dimension of recordings
- * max_freq_hz  the value MAX_FREQ_HZ has in your code, so the stored ADC
- *              values map back to the right frequencies on playback
+ * max_freq_hz  whatever MAX_FREQ_HZ is in your code, so the stored ADC values
+ *              map back to the right frequencies on playback
  *
- * Returns the number of syllables actually loaded.
+ * Returns the number of calls loaded. A call longer than max_samples is
+ * truncated rather than skipped.
  */
 int cardinal_load_presets(uint16_t *recordings, uint16_t *lengths,
                           int num_keys, int max_samples, float max_freq_hz);

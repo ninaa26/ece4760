@@ -110,7 +110,10 @@ static inline unsigned int adc_to_phase_incr(unsigned int adc) {
 // Keys are numbered 1-9, so index N holds key N and slot 0 is simply unused.
 // Sizing these [9] would overflow on key 9.
 #define NUM_RECORD_KEYS 10
-#define MAX_SAMPLES 1000      // 1000 / 100 Hz = 10 seconds per key
+// 2500 samples. At the 10 ms recording rate that is 25 seconds per key; at the
+// 1 ms playback rate it is 2.5 seconds, which is what a full cardinal song
+// needs (Cornell Lab: songs last 2 to 3 seconds).
+#define MAX_SAMPLES 2500
 
 // Silence between the notes of a composed phrase. Back-to-back recordings
 // slur into one sound; real birdsong has gaps, and Merlin is matching a
@@ -558,9 +561,10 @@ int main() {
                                       NUM_RECORD_KEYS, MAX_SAMPLES,
                                       MAX_FREQ_HZ) ;
         printf("loaded %d cardinal presets:\n", n) ;
-        for (int i = 0 ; i < cardinal_syllable_count() ; i++) {
-            printf("  key %d = %s\n",
-                   cardinal_syllable_key(i), cardinal_syllable_name(i)) ;
+        for (int i = 0 ; i < cardinal_call_count() ; i++) {
+            printf("  key %d = %-28s %4d ms\n",
+                   cardinal_call_key(i), cardinal_call_name(i),
+                   cardinal_call_ms(i)) ;
         }
     }
 
