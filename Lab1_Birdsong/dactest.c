@@ -27,9 +27,6 @@
 #include <string.h>
 #include "stdlib.h"
 
-#include "pico/multicore.h"
-#include "hardware/pio.h"
-#include "hardware/dma.h"
 #include "hardware/sync.h"
 #include "hardware/clocks.h"
 
@@ -76,19 +73,26 @@ uint16_t DAC_data ; // output value
 #define sine_table_size 256
 volatile int sin_table[sine_table_size] ;
 
+// The checkpoint asks for 0 to ~10 kHz, but a raw ADC reading only runs 0-4095,
+// so stretch it before it becomes a phase increment.
+// Recording and playback BOTH call this, so the two can never drift apart.
+#define MAX_FREQ_HZ 10000.0f
+static inline unsigned int adc_to_phase_incr(unsigned int adc) {
+    float freq = ((float)adc * MAX_FREQ_HZ) / 4095.0f ;
+    return (unsigned int)(((double)freq * two32) / Fs) ;
+}
+
 // Keys are numbered 1-9, so index N holds key N and slot 0 is simply unused.
 // Sizing these [9] would overflow on key 9.
 #define NUM_RECORD_KEYS 10
-#define MAX_SAMPLES 10000
+#define MAX_SAMPLES 1000      // 1000 / 100 Hz = 10 seconds per key
 
 uint16_t recordings[NUM_RECORD_KEYS][MAX_SAMPLES];
 uint16_t record_length[NUM_RECORD_KEYS];
 
-// FIX 1: this used to be a non-static local inside protothread_core_0.
-// Protothreads resume by jumping into a switch, which skips the declaration's
-// initialiser, and non-static locals do not survive a yield - so its contents
-// were unpredictable. It is shared state, so it belongs at file scope.
-bool recorded[NUM_RECORD_KEYS] = {false};
+// A key "has a recording" when its stored length is greater than zero, so a
+// separate recorded[] flag array is not needed - and cannot fall out of step
+// with the data, the way a second copy of the truth eventually always does.
 
 bool record_mode = false;
 bool recording = false;
@@ -116,8 +120,9 @@ static void alarm_irq(void) {
         // Perform an SPI transaction
         spi_write16_blocking(SPI_PORT, &DAC_data, 1) ;
     } else {
-        // If tone is off, output midscale
-        DAC_data = (DAC_config_chan_B) ;
+        // Tone off: hold the DAC at mid-scale. The wave is centred on 2048,
+        // so stopping there is silent without a full-scale step and its click.
+        DAC_data = (DAC_config_chan_B | 2048) ;
         spi_write16_blocking(SPI_PORT, &DAC_data, 1) ;
     }
     
@@ -146,9 +151,6 @@ static PT_THREAD (protothread_toggle25(struct pt *pt))
     static unsigned int adc_val ;
 
       while(1) {
-        // toggle gpio 25
-        gpio_put(LED_PIN, !gpio_get(LED_PIN));
-
         // Read the ADC
         adc_val = adc_read() ;
 
@@ -156,7 +158,7 @@ static PT_THREAD (protothread_toggle25(struct pt *pt))
         // phase_incr_main, at the same 100 Hz. Without this guard the two
         // threads fight and you hear the slider instead of the recording.
         if (!playing) {
-            phase_incr_main = (adc_val*two32)/Fs ;
+            phase_incr_main = adc_to_phase_incr(adc_val) ;
         }
         // Print the value
         // printf("ADC value: %d\n", adc_val) ;
@@ -171,7 +173,7 @@ static PT_THREAD (protothread_toggle25(struct pt *pt))
             }
         }
         // Yield
-        PT_YIELD_usec(10000) ; //represents wait for 10s and sample --> then yield to other threads
+        PT_YIELD_usec(10000) ; // 10 ms -> this thread runs at 100 Hz
       } // END WHILE(1)
       // every thread ends with PT_END(pt);
       PT_END(pt);
@@ -182,20 +184,24 @@ static PT_THREAD (protothread_playback(struct pt *pt))
     PT_BEGIN(pt);
 
     static int sample;
+    static int play_key;
     static unsigned int playback_adc;
 
     while(1) {
 
         if (playing && record_key >= 0) {
 
+            // Latch the key now: record_key can change under us if another key
+            // is pressed while this recording is still playing.
+            play_key = record_key;
+
             for (sample = 0;
-                 sample < record_length[record_key];
+                 playing && sample < record_length[play_key];
                  sample++) {
 
-                playback_adc = recordings[record_key][sample];
+                playback_adc = recordings[play_key][sample];
 
-                phase_incr_main =
-                    (playback_adc * two32) / Fs;
+                phase_incr_main = adc_to_phase_incr(playback_adc);
 
                 PT_YIELD_usec(10000);
             }
@@ -215,17 +221,12 @@ static PT_THREAD (protothread_playback(struct pt *pt))
 #define KEYROWS         4
 #define NUMKEYS         12
 
-#define LED             25
-
 unsigned int keycodes[NUMKEYS] = {      0x57, 0x6E, 0x5E, 0x3E, 0x6D,
                                         0x5D, 0x3D, 0x6B, 0x5B, 0x3B,
                                         0x67, 0x37} ;
 unsigned int scancodes[KEYROWS] = {   0xE, 0xD, 0xB, 0x7} ;
 unsigned int button = 0x70 ;
 
-
-char keytext[40];
-int prev_key = 0;
 
 #define NOT_PRESSED       0
 #define MAYBE_PRESSED     1
@@ -246,11 +247,13 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
 
     while(1) {
 
-        gpio_put(LED, !gpio_get(LED)) ;
+        // Heartbeat. This thread is the only owner of the LED, so a steady
+        // blink means the keypad thread is still being scheduled.
+        gpio_put(LED_PIN, !gpio_get(LED_PIN)) ;
 
         // Scan the keypad!
         for (i=0; i<KEYROWS; i++) {
-            // Set a row high
+            // Drive one row LOW (each scancode has a single zero bit)
             gpio_put_masked((0xF << BASE_KEYPAD_PIN),
                             (scancodes[i] << BASE_KEYPAD_PIN)) ;
             // Small delay required
@@ -291,47 +294,34 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
                         printf("tone %s\n", tone ? "on" : "off") ;
 
                     } else if (possible_key == 10){
-                        //record mode toggle
+                        // The * key ARMS recording for the next key pressed.
+                        // It erases nothing: recordings persist until that key
+                        // is deliberately recorded over.
                         record_mode = !record_mode ;
-                    
-                        if (record_mode){
-                            printf("record mode on\n") ;
-                            recording = false;
-                            playing = false;
+                        recording = false;
+                        playing = false;
+                        printf("record mode %s\n", record_mode ? "armed" : "off") ;
 
-                            // Allow keys 1-9 to be recorded again
-                            for (int k = 0; k < NUM_RECORD_KEYS; k++) {
-                                recorded[k] = false;
-                            }
-                        
-                        } else {
-                            printf("record mode off\n") ;
-                            recording = false;
-                            playing = false;
-                            tone = false;
-                        }
-
-                    } else if (record_mode && possible_key < 10 && possible_key > 0){
+                    } else if (possible_key > 0 && possible_key < 10){
                         record_key = possible_key;
 
-                        if (!recorded[record_key]) {
-
-                            // No recording yet -> start recording
+                        if (record_mode) {
+                            // Armed -> capture into this key, clearing only it
                             record_length[record_key] = 0;
                             recording = true;
                             playing = false;
                             tone = true;
-
                             printf("Recording key %d\n", possible_key);
-                        }
 
-                        else {
-                            // Recording exists -> play it
+                        } else if (record_length[record_key] > 0) {
+                            // Not armed -> play it back. No mode required.
                             recording = false;
                             playing = true;
                             tone = true;
-
                             printf("Playing key %d\n", possible_key);
+
+                        } else {
+                            printf("key %d is empty\n", possible_key);
                         }
                     }
                 } else {
@@ -354,16 +344,15 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
                     //     printf("recording stopped\n") ;
                     // }
 
-                    if (recording && possible_key < 10 && possible_key > 0){
-                        recorded[record_key] = true;
-                        recording = false;
+                    if (recording && possible_key == record_key){
+                        recording   = false;
+                        record_mode = false;   // one recording per * press
+                        printf("key %d: %d samples\n",
+                               record_key, record_length[record_key]);
                     }
                 }
                 break ;
         }
-
-        // Print key to terminal
-        printf("\n%d", i) ;
 
         PT_YIELD_usec(30000) ;
     }
@@ -408,9 +397,10 @@ int main() {
     gpio_set_dir((BASE_KEYPAD_PIN+6), GPIO_IN);
     // Set row-pins to output
     gpio_set_dir_out_masked((0xF << BASE_KEYPAD_PIN)) ;
-    // Set all output pins to low
+    // Idle all four row outputs HIGH
     gpio_put_masked((0xF << BASE_KEYPAD_PIN), (0xF << BASE_KEYPAD_PIN)) ;
-    // Turn on pulldown resistors for column pins (on by default)
+    // Turn on pull-UP resistors for the column pins, so an unpressed column
+    // reads 1 and a closed switch pulls it to 0
     gpio_pull_up((BASE_KEYPAD_PIN+4)) ;
     gpio_pull_up((BASE_KEYPAD_PIN+5)) ;
     gpio_pull_up((BASE_KEYPAD_PIN+6)) ;
