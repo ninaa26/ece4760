@@ -1,7 +1,8 @@
 # Lab notebook — Lab 1, Synthesizing Birdsong
 
 ECE 4760, Cornell, Fall 2025
-Nina (ninaa26) · Raspberry Pi Pico 2 / RP2350
+Group members: ___
+Board: Raspberry Pi Pico 2 / RP2350
 Repo: https://github.com/ninaa26/ece4760
 
 Fields written as `___` still need a measurement taken at the bench. Do not
@@ -571,8 +572,8 @@ git log --format='%h %s %(trailers:key=Co-Authored-By,valueonly)'
 | Commit | Lines | Author | What |
 | --- | --- | --- | --- |
 | `aac577c` | +125 −0 | starter | Hunter's `a_Timer_Interrupt_DDS_Demo`, unmodified |
-| `64e7d0b` | +160 −7 | Nina | ADC thread, channel B, keypad scan (written in lab; committed with AI help) |
-| `ca9cdfb` | +435 −278 | Nina | Debounce state machine, record mode, playback thread |
+| `64e7d0b` | +160 −7 | group | ADC thread, channel B, keypad scan (written in lab; committed with AI help) |
+| `ca9cdfb` | +435 −278 | group | Debounce state machine, record mode, playback thread |
 | `8f8cfce` | +10 −3 | AI | Bugs 1 and 2 |
 | `b44499f` | +15 −4 | AI | Bugs 3 and 4 |
 | `42adcbb` | +52 −62 | AI | Bugs 5–12 and the record-mode restructure |
@@ -581,7 +582,7 @@ git log --format='%h %s %(trailers:key=Co-Authored-By,valueonly)'
 
 **Totals for the lab source file:**
 
-- Written by Nina: **+595 −285**
+- Written by the group: **+595 −285**
 - Suggested by AI: **+136 −84** across five commits
 - Accepted: **all of them**
 - Rejected or reverted: **none**

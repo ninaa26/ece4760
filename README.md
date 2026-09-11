@@ -1,4 +1,4 @@
-# ECE 4760 / 5730 — Nina
+# ECE 4760 / 5730
 
 Course work for Digital Systems Design Using Microcontrollers (Cornell, Fall 2025).
 Board: Raspberry Pi Pico 2 (RP2350).
