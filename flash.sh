@@ -38,12 +38,21 @@ if [[ -z "$DRIVE" ]]; then
 fi
 
 echo "copying $(basename "$UF2") -> $DRIVE"
-cp "$UF2" "$DRIVE"/ 2>/dev/null || true
+# Do NOT swallow errors here: a failed copy used to look identical to a
+# successful one, because the board ejects the drive either way.
+if ! cp "$UF2" "$DRIVE"/ ; then
+  echo "The copy failed. Retrying once..."
+  sleep 1
+  cp "$UF2" "$DRIVE"/ || { echo "Still failing. Is that really the Pico drive?"; exit 1; }
+fi
 sleep 3
 if [[ -d "$DRIVE" ]]; then
   echo "WARNING: $DRIVE is still mounted — the copy may not have taken."
 else
   echo
   echo "FLASHED. The drive ejected itself, which means the board is running it."
-  echo "Press 1-6 for the cardinal presets.  # then 1 2 1 2 3 then # for a phrase."
+  echo "  keys 1-6  single syllables"
+  echo "  key 7     SONG  what-cheer-cheer-cheer   2.1 s"
+  echo "  key 8     SONG  what-cheer-cheer         1.5 s"
+  echo "  key 9     SONG  birdy-birdy-birdy        1.3 s"
 fi
