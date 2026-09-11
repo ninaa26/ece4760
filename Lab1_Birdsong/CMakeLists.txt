@@ -26,9 +26,9 @@ project(birdsong C CXX ASM)
 # initialize the sdk
 pico_sdk_init()
 
-add_executable(birdsong birdsong.c)
+add_executable(birdsong birdsong.c northern_cardinal.c)
 
-target_sources(birdsong PRIVATE birdsong.c)
+target_sources(birdsong PRIVATE birdsong.c northern_cardinal.c)
 
 target_link_libraries(birdsong 
     pico_stdlib 

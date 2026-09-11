@@ -31,6 +31,7 @@
 #include "hardware/clocks.h"
 
 #include "pt_cornell_rp2040_v1_4.h"
+#include "northern_cardinal.h"
 
 
 
@@ -111,6 +112,11 @@ static inline unsigned int adc_to_phase_incr(unsigned int adc) {
 #define NUM_RECORD_KEYS 10
 #define MAX_SAMPLES 1000      // 1000 / 100 Hz = 10 seconds per key
 
+// Silence between the notes of a composed phrase. Back-to-back recordings
+// slur into one sound; real birdsong has gaps, and Merlin is matching a
+// pattern that includes them. Try 0 and try 60000 and keep what convinces.
+#define NOTE_GAP_US 50000
+
 uint16_t recordings[NUM_RECORD_KEYS][MAX_SAMPLES];
 uint16_t record_length[NUM_RECORD_KEYS];
 
@@ -123,6 +129,17 @@ bool recording = false;
 bool playing = false;
 
 int record_key = -1;
+
+// ---- Compose mode ----
+// The sequence stores KEY NUMBERS, not sound. All of the audio already lives
+// in recordings[]; a whole phrase is just a short list of which keys to fire.
+#define MAX_SEQUENCE 32
+
+int  sequence[MAX_SEQUENCE] ;    // the key numbers, in order
+int  sequence_length  = 0 ;      // how many slots are actually used
+int  seq_index        = 0 ;      // which slot the replay is on
+bool compose_mode     = false ;  // collecting key presses right now?
+bool playing_sequence = false ;  // replaying a phrase right now?
 
 // Alarm ISR
 static void alarm_irq(void) {
@@ -242,10 +259,34 @@ static PT_THREAD (protothread_playback(struct pt *pt))
 
                 phase_incr_main = adc_to_phase_incr(playback_adc);
 
-                PT_YIELD_usec(10000);
+                // This wait IS the playback speed. Every sample is still read;
+                // we simply do not dawdle between them. Recording captures one
+                // sample per 10000 us, so 1000 us replays it at 10x.
+                PT_YIELD_usec(1000);
             }
 
             playing = false;
+
+            // If a phrase is running, start the next note instead of stopping.
+            if (playing_sequence) {
+
+                // Step past any sequence entries whose key holds no recording,
+                // so one empty slot cannot stall the whole phrase. Without this
+                // the thread would sit with playing false and playing_sequence
+                // true, and nothing would ever advance it again.
+                do {
+                    seq_index++ ;
+                } while (seq_index < sequence_length &&
+                         record_length[sequence[seq_index]] == 0) ;
+
+                if (seq_index < sequence_length) {
+                    record_key = sequence[seq_index] ;
+                    PT_YIELD_usec(NOTE_GAP_US) ;   // a breath between notes
+                    playing = true ;
+                } else {
+                    playing_sequence = false ;     // phrase finished
+                }
+            }
         }
 
         PT_YIELD_usec(1000);
@@ -328,7 +369,16 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
                     state = PRESSED ;
 
                     if (possible_key == 0){
-                        // FIX 4 - key 0 toggles the tone generator on and off
+                        // Key 0 toggles the tone generator, and doubles as the
+                        // escape hatch: it returns every mode to a known state.
+                        // The demo forbids resetting the board, so there has to
+                        // be a way back from any state the machine can reach.
+                        recording        = false ;
+                        playing          = false ;
+                        playing_sequence = false ;
+                        compose_mode     = false ;
+                        record_mode      = false ;
+
                         tone = !tone ;
                         if (tone) {
                             printf("tone on\n") ;
@@ -349,10 +399,43 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
                             printf("record mode off\n") ;
                         }
 
+                    } else if (possible_key == 11){
+                        // The # key. First press starts collecting a sequence;
+                        // second press stops collecting and plays it back.
+                        if (!compose_mode) {
+                            compose_mode = true ;
+                            sequence_length = 0 ;
+                            printf("compose mode on\n") ;
+
+                        } else {
+                            compose_mode = false ;
+                            printf("composed %d notes\n", sequence_length) ;
+
+                            if (sequence_length > 0) {
+                                seq_index = 0 ;
+                                record_key = sequence[0] ;
+                                playing_sequence = true ;
+                                playing = true ;
+                                tone = true ;
+                            }
+                        }
+
                     } else if (possible_key > 0 && possible_key < 10){
                         record_key = possible_key;
 
-                        if (record_mode) {
+                        if (compose_mode) {
+                            // Collecting a phrase: append the key number and
+                            // make no sound. This has to be tested BEFORE the
+                            // record and play branches, or pressing 3 while
+                            // composing would play key 3 instead of adding it.
+                            if (sequence_length < MAX_SEQUENCE) {
+                                sequence[sequence_length] = possible_key ;
+                                sequence_length++ ;
+                                printf("added %d (%d notes)\n",
+                                       possible_key, sequence_length) ;
+                            }
+
+                        } else if (record_mode) {
                             // Armed -> capture into this key, clearing only it
                             record_length[record_key] = 0;
                             recording = true;
@@ -464,6 +547,21 @@ int main() {
     int ii;
     for (ii = 0; ii < sine_table_size; ii++){
          sin_table[ii] = float2fix15(2047*sin((float)ii*6.283/(float)sine_table_size));
+    }
+
+    // Preload keys 1-6 with synthesised cardinal syllables. Recording over any
+    // of them replaces the preset, so this changes nothing about how the lab's
+    // record / playback / compose path behaves - it just means the keys are
+    // not empty at power-on.
+    {
+        int n = cardinal_load_presets(&recordings[0][0], record_length,
+                                      NUM_RECORD_KEYS, MAX_SAMPLES,
+                                      MAX_FREQ_HZ) ;
+        printf("loaded %d cardinal presets:\n", n) ;
+        for (int i = 0 ; i < cardinal_syllable_count() ; i++) {
+            printf("  key %d = %s\n",
+                   cardinal_syllable_key(i), cardinal_syllable_name(i)) ;
+        }
     }
 
     // Envelope ramp rates: reach full scale in ATTACK_TIME ticks, and fall
