@@ -69,9 +69,33 @@ uint16_t DAC_data ; // output value
 //GPIO for timing the ISR
 #define ISR_GPIO 2
 
+// ---- Fixed-point arithmetic, same macros as the course beep demo ----
+// A fix15 is a 32-bit int holding 15 fractional bits, so 1.0 is stored as 32768.
+// Used in the ISR because it is integer maths: no floating point in the
+// interrupt, which is what keeps it inside the 20 us budget.
+typedef signed int fix15 ;
+#define multfix15(a,b) ((fix15)((((signed long long)(a))*((signed long long)(b)))>>15))
+#define float2fix15(a) ((fix15)((a)*32768.0))
+#define int2fix15(a)   ((fix15)(a << 15))
+#define fix2int15(a)   ((int)(a >> 15))
+#define divfix(a,b)    (fix15)((((signed long long)(a)) << 15) / (b))
+
 // DDS sine table
 #define sine_table_size 256
-volatile int sin_table[sine_table_size] ;
+volatile fix15 sin_table[sine_table_size] ;
+
+// ---- Amplitude envelope ----
+// A note that starts and stops instantly is a step change in amplitude, which
+// spreads energy across every frequency: you hear a click and the spectrogram
+// shows a vertical smear. Ramping in and out removes both.
+// Times are in ISR ticks, so 250 ticks at Fs = 50 kHz is 5 ms.
+#define ATTACK_TIME 250
+#define DECAY_TIME  250
+
+fix15 max_amplitude = int2fix15(1) ;   // full scale
+fix15 attack_inc ;                     // added per tick while ramping up
+fix15 decay_inc ;                      // subtracted per tick while ramping down
+volatile fix15 current_amplitude = 0 ; // lives in the ISR
 
 // The checkpoint asks for 0 to ~10 kHz, but a raw ADC reading only runs 0-4095,
 // so stretch it before it becomes a phase increment.
@@ -112,19 +136,34 @@ static void alarm_irq(void) {
     // Reset the alarm register
     timer_hw->alarm[ALARM_NUM] = timer_hw->timerawl + DELAY ;
 
+    // ---- Envelope ----
+    // Note on: ramp up to full scale and hold there (attack, then sustain).
+    // Note off: ramp back down to zero (decay). At zero the sine is multiplied
+    // away, the output sits at mid-scale 2048, and that is silence.
     if (tone) {
-        // DDS phase and sine table lookup
-        phase_accum_main += phase_incr_main  ;
-        DAC_data = (DAC_config_chan_B | ((sin_table[phase_accum_main>>24] + 2048) & 0xffff))  ;
-
-        // Perform an SPI transaction
-        spi_write16_blocking(SPI_PORT, &DAC_data, 1) ;
+        if (current_amplitude < max_amplitude) {
+            current_amplitude += attack_inc ;
+            if (current_amplitude > max_amplitude) {
+                current_amplitude = max_amplitude ;
+            }
+        }
     } else {
-        // Tone off: hold the DAC at mid-scale. The wave is centred on 2048,
-        // so stopping there is silent without a full-scale step and its click.
-        DAC_data = (DAC_config_chan_B | 2048) ;
-        spi_write16_blocking(SPI_PORT, &DAC_data, 1) ;
+        if (current_amplitude > 0) {
+            current_amplitude -= decay_inc ;
+            if (current_amplitude < 0) {
+                current_amplitude = 0 ;
+            }
+        }
     }
+
+    // DDS phase and sine table lookup, scaled by the envelope
+    phase_accum_main += phase_incr_main  ;
+    DAC_data = (DAC_config_chan_B |
+                ((fix2int15(multfix15(current_amplitude,
+                                      sin_table[phase_accum_main>>24])) + 2048) & 0xffff)) ;
+
+    // Perform an SPI transaction
+    spi_write16_blocking(SPI_PORT, &DAC_data, 1) ;
     
     // De-assert the GPIO when we leave the interrupt
     gpio_put(ISR_GPIO, 0) ;
@@ -424,8 +463,13 @@ int main() {
     // scaled to produce values between 0 and 4096
     int ii;
     for (ii = 0; ii < sine_table_size; ii++){
-         sin_table[ii] = (int)(2047*sin((float)ii*6.283/(float)sine_table_size));
+         sin_table[ii] = float2fix15(2047*sin((float)ii*6.283/(float)sine_table_size));
     }
+
+    // Envelope ramp rates: reach full scale in ATTACK_TIME ticks, and fall
+    // back to zero in DECAY_TIME ticks.
+    attack_inc = divfix(max_amplitude, int2fix15(ATTACK_TIME)) ;
+    decay_inc  = divfix(max_amplitude, int2fix15(DECAY_TIME)) ;
 
     // Enable the interrupt for the alarm (we're using Alarm 0)
     hw_set_bits(&timer_hw->inte, 1u << ALARM_NUM) ;

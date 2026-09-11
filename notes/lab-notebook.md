@@ -43,6 +43,9 @@ Keypad header order on the lab's 3×4 units is
 | `MAX_FREQ_HZ` | 10 000.0 | top of the slider's range |
 | `NUM_RECORD_KEYS` | 10 | slot 0 unused so index N = key N |
 | `MAX_SAMPLES` | 1000 | 10 seconds per key at 100 Hz |
+| `ATTACK_TIME` | 250 | ISR ticks = 5.0 ms rise |
+| `DECAY_TIME` | 250 | ISR ticks = 5.0 ms fall |
+| `max_amplitude` | `int2fix15(1)` | full scale, 1.0 in fix15 |
 | SPI baud | 20 MHz | 16-bit frames, mode 0 |
 
 Build: `text 27,348 · bss 24,508` of the RP2350's 520 KB.
@@ -108,6 +111,11 @@ execution time measured on the scope.
 | Pulse width before week 2 changes | ___ µs | baseline for comparison |
 | Recording length, 2 s hold | ___ samples | ~200 at 100 Hz |
 | Keys verified working | ___ | all twelve |
+| ISR pulse width **before** the envelope | ___ µs | baseline |
+| ISR pulse width **after** the envelope | ___ µs | wider: one 64-bit multiply added |
+| Increase from the envelope | ___ µs | this is the code-characterisation result |
+| Envelope rise time | ___ ms | 5.0 |
+| Envelope fall time | ___ ms | 5.0 |
 
 ### Observations
 
@@ -155,7 +163,31 @@ changes.
 
 **Floating point outside the ISR only.** The conversion uses `float`, which is
 fine at 100 Hz in a thread. Fixed point exists so the interrupt finishes inside
-20 µs; nothing in the ISR uses floats.
+20 µs; nothing in the ISR uses floats — the envelope multiply is `multfix15`,
+which is a 64-bit integer multiply and a shift.
+
+**A linear amplitude envelope.** A note that starts and stops instantly is a
+step change in amplitude, and a step contains energy at every frequency: you
+hear a click, and the spectrogram shows a vertical smear across the whole band
+at each note boundary. Ramping in over 5 ms and out over 5 ms removes both.
+
+Linear was chosen because it costs one fix15 addition per sample. The
+alternatives and their trade-offs:
+
+| Envelope | Advantage | Cost |
+| --- | --- | --- |
+| Linear | one add per sample | slope changes abruptly at the corners, so a faint tick remains |
+| Exponential | matches how physical things decay, sounds natural | a multiply per sample; never quite reaches zero |
+| Raised cosine | smooth slope everywhere, cleanest attack | needs a table or a running oscillator |
+| ADSR | expressive, standard in synthesis | a state machine and four parameters to tune |
+| Gaussian | most compact in frequency, least spectral smearing | table-driven, no truly flat sustain |
+
+Implementation follows the course beep-synthesis demo: `attack_inc` and
+`decay_inc` are computed once at boot with `divfix(max_amplitude,
+int2fix15(ATTACK_TIME))`, and the ISR adds or subtracts one increment per tick
+until it reaches the ceiling or zero. At zero the sine is multiplied away and
+the output sits at mid-scale 2048, which is silence — so muting no longer needs
+a special case.
 
 ### Open design question
 
@@ -250,15 +282,65 @@ Two reference pages were produced during the work and may be cited:
 
 ---
 
-## 7. Still to do
+## 7. Capturing the report figures
+
+### Scope trace: rise, sustain, fall
+
+Required by the report. The envelope makes it capturable.
+
+1. Probe the DAC output (pin 6, VOUTB); ground clip on any GND hole.
+2. Timebase **10–20 ms/div**. The rise is 5 ms and the fall is 5 ms, so a
+   held note of roughly 100 ms fits rise, sustain and fall on one screen.
+3. Vertical **0.5 V/div**, with the trace centred — the wave sits on 2048,
+   which is mid-supply, not ground.
+4. Trigger on the rising edge, single-shot, then press a key. Single-shot is
+   the trick: a repeating trigger will not hold a one-off note.
+5. The envelope is the *outline* of the waveform, not the waveform itself. At
+   this timebase the individual cycles blur into a filled shape whose upper and
+   lower edges trace the envelope. That shape is the figure.
+
+Annotate the capture with the three regions and the measured rise and fall
+times.
+
+### Spectrogram
+
+Aux cable from the DAC output into the laptop's microphone input, then any of:
+
+- Audacity — record, then switch the track view to Spectrogram
+- WaveForms on the lab PC — Spectrum Analyzer, or the Scope's FFT view
+- Python — `scipy.signal.spectrogram` on a WAV recording
+- The Merlin app pointed at a speaker, which also tests whether it convinces
+
+A good swoop appears as a clean line sweeping up and back down between about
+2 kHz and 7 kHz. Vertical smears at the note boundaries would mean the envelope
+is not working.
+
+### ISR timing
+
+Probe GPIO 2. Pulse width is execution time, the gap is 20 µs. Capture it both
+with and without the envelope if possible — the difference is the cost of one
+`multfix15`, and that comparison is exactly what "code characterisation" means
+in the report.
+
+### Code listing
+
+`Lab1_Birdsong/dactest.c`. Check before submitting that no comment contradicts
+its line — four did, and they are logged in section 5.
+
+### Photograph
+
+Breadboard from directly above, with the keypad and potentiometer in place.
+
+---
+
+## 8. Still to do
 
 ### Before the week 3 checkout
 
+- [x] ~~Amplitude envelope~~ — done, 5 ms linear attack and decay
 - [ ] Playback at 8–10× speed (advance the index by 8 instead of 1)
 - [ ] `#` compose mode: record a key sequence, replay the phrase
-- [ ] Amplitude envelope — attack, sustain, decay — to remove the click on
-      note boundaries. Required for the report's scope trace
-- [ ] Re-measure ISR timing after the envelope is added
+- [ ] Re-measure ISR timing now that the envelope is in
 - [ ] 5730 only: external switch so the pot sets volume instead of frequency
 
 ### Report deliverables
