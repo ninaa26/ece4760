@@ -1,5 +1,5 @@
 /**
- * northern_cardinal.h — synthesised Northern Cardinal calls
+ * northern_cardinal.h — real Northern Cardinal calls, transcribed
  *
  * Preloads all nine recording slots with frequency contours shaped like a
  * cardinal's vocabulary. Keys 1-6 are single syllables; keys 7-9 are complete
@@ -44,25 +44,6 @@
 #define NORTHERN_CARDINAL_H
 
 #include <stdint.h>
-
-// One piece of a call. The pitch runs f_start -> f_mid -> f_end, eased with a
-// raised cosine at each half so it never turns a corner abruptly.
-// All three zero means SILENCE: a phase increment of zero freezes the
-// oscillator, which produces no sound.
-typedef struct {
-    int   ms;
-    float f_start;
-    float f_mid;
-    float f_end;
-} cardinal_segment_t;
-
-// A call is a list of segments loaded onto one key.
-typedef struct {
-    int                       key;
-    const char               *name;
-    const cardinal_segment_t *seg;
-    int                       n_seg;
-} cardinal_call_t;
 
 int         cardinal_call_count(void);
 const char *cardinal_call_name(int i);
