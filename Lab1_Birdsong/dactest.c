@@ -49,6 +49,9 @@
 volatile unsigned int phase_accum_main;
 volatile unsigned int phase_incr_main;
 
+// turn on/off the tone
+volatile bool tone = false;
+
 // SPI data
 uint16_t DAC_data ; // output value
 
@@ -72,6 +75,18 @@ uint16_t DAC_data ; // output value
 #define sine_table_size 256
 volatile int sin_table[sine_table_size] ;
 
+#define NUM_RECORD_KEYS 9
+#define MAX_SAMPLES 10000
+
+uint16_t recordings[NUM_RECORD_KEYS][MAX_SAMPLES];
+uint16_t record_length[NUM_RECORD_KEYS];
+
+bool record_mode = false;
+bool recording = false;
+bool playing = false;
+
+int record_key = -1;
+
 // Alarm ISR
 static void alarm_irq(void) {
 
@@ -84,13 +99,19 @@ static void alarm_irq(void) {
     // Reset the alarm register
     timer_hw->alarm[ALARM_NUM] = timer_hw->timerawl + DELAY ;
 
-	// DDS phase and sine table lookup
-	phase_accum_main += phase_incr_main  ;
-    DAC_data = (DAC_config_chan_B | ((sin_table[phase_accum_main>>24] + 2048) & 0xffff))  ;
+    if (tone) {
+        // DDS phase and sine table lookup
+        phase_accum_main += phase_incr_main  ;
+        DAC_data = (DAC_config_chan_B | ((sin_table[phase_accum_main>>24] + 2048) & 0xffff))  ;
 
-    // Perform an SPI transaction
-    spi_write16_blocking(SPI_PORT, &DAC_data, 1) ;
-
+        // Perform an SPI transaction
+        spi_write16_blocking(SPI_PORT, &DAC_data, 1) ;
+    } else {
+        // If tone is off, output midscale
+        DAC_data = (DAC_config_chan_B) ;
+        spi_write16_blocking(SPI_PORT, &DAC_data, 1) ;
+    }
+    
     // De-assert the GPIO when we leave the interrupt
     gpio_put(ISR_GPIO, 0) ;
 
@@ -126,12 +147,53 @@ static PT_THREAD (protothread_toggle25(struct pt *pt))
         // Print the value
         // printf("ADC value: %d\n", adc_val) ;
 
+        // record 
+        if (recording && record_key >= 0) {
+            if (record_length[record_key] < MAX_SAMPLES) {
+                recordings[record_key][record_length[record_key]] = adc_val;
+                record_length[record_key]++;
+            } else {
+                recording = false; // stop recording if max samples reached
+            }
+        }
         // Yield
         PT_YIELD_usec(10000) ; //represents wait for 10s and sample --> then yield to other threads
       } // END WHILE(1)
       // every thread ends with PT_END(pt);
       PT_END(pt);
 } // end blink thread
+
+static PT_THREAD (protothread_playback(struct pt *pt))
+{
+    PT_BEGIN(pt);
+
+    static int sample;
+    static unsigned int playback_adc;
+
+    while(1) {
+
+        if (playing && record_key >= 0) {
+
+            for (sample = 0;
+                 sample < record_length[record_key];
+                 sample++) {
+
+                playback_adc = recordings[record_key][sample];
+
+                phase_incr_main =
+                    (playback_adc * two32) / Fs;
+
+                PT_YIELD_usec(10000);
+            }
+
+            playing = false;
+        }
+
+        PT_YIELD_usec(1000);
+    }
+      // every thread ends with PT_END(pt);
+      PT_END(pt);
+}
 
 
 // Keypad pin configurations
@@ -151,6 +213,11 @@ unsigned int button = 0x70 ;
 char keytext[40];
 int prev_key = 0;
 
+#define NOT_PRESSED       0
+#define MAYBE_PRESSED     1
+#define PRESSED           2
+#define MAYBE_NOT_PRESSED 3
+
 // This thread runs on core 0
 static PT_THREAD (protothread_core_0(struct pt *pt))
 {
@@ -160,6 +227,9 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
     // Some variables
     static int i ;
     static uint32_t keypad ;
+    static int state = NOT_PRESSED ;
+    static int possible_key;
+    bool recorded[9] = {false};
 
     while(1) {
 
@@ -188,6 +258,91 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
         }
         // Otherwise, indicate invalid/non-pressed buttons
         else (i=-1) ;
+
+        // Debouncing state machine
+
+        switch (state) {
+            case NOT_PRESSED:
+                if (i >= 0) {
+                    possible_key = i ;
+                    state = MAYBE_PRESSED ;
+                }
+                break ;
+            case MAYBE_PRESSED:
+                if (i == possible_key) {
+                    state = PRESSED ;
+
+                    if (possible_key == 10){
+                        //record mode toggle
+                        record_mode = !record_mode ;
+                    
+                        if (record_mode){
+                            printf("record mode on\n") ;
+                            recording = false;
+                            playing = false;
+
+                            // Allow keys 1-9 to be recorded again
+                            for (int k = 0; k < 9; k++) {
+                                recorded[k] = false;
+                            }
+                        
+                        } else {
+                            printf("record mode off\n") ;
+                            recording = false;
+                            playing = false;
+                            tone = false;
+                        }
+
+                    } else if (record_mode && possible_key < 10 && possible_key > 0){
+                        record_key = possible_key;
+
+                        if (!recorded[record_key]) {
+
+                            // No recording yet -> start recording
+                            record_length[record_key] = 0;
+                            recording = true;
+                            playing = false;
+                            tone = true;
+
+                            printf("Recording key %d\n", possible_key);
+                        }
+
+                        else {
+                            // Recording exists -> play it
+                            recording = false;
+                            playing = true;
+                            tone = true;
+
+                            printf("Playing key %d\n", possible_key);
+                        }
+                    }
+                } else {
+                    state = NOT_PRESSED ;
+                }
+                break ;
+            case PRESSED:
+                if (i != possible_key) {
+                    state = MAYBE_NOT_PRESSED ;
+                }
+                break ;
+            case MAYBE_NOT_PRESSED:
+                if (i == possible_key) {
+                    state = PRESSED ;
+                    //tone = false ;
+                } else {
+                    state = NOT_PRESSED ;
+                    // if (recording){
+                    //     recording = false;
+                    //     printf("recording stopped\n") ;
+                    // }
+
+                    if (recording && possible_key < 10 && possible_key > 0){
+                        recorded[record_key] = true;
+                        recording = false;
+                    }
+                }
+                break ;
+        }
 
         // Print key to terminal
         printf("\n%d", i) ;
@@ -250,7 +405,7 @@ int main() {
     gpio_set_function(PIN_CS, GPIO_FUNC_SPI) ;
 
     // === build the sine lookup table =======
-   	// scaled to produce values between 0 and 4096
+    // scaled to produce values between 0 and 4096
     int ii;
     for (ii = 0; ii < sine_table_size; ii++){
          sin_table[ii] = (int)(2047*sin((float)ii*6.283/(float)sine_table_size));
@@ -267,6 +422,8 @@ int main() {
 
       // === config threads ========================
     pt_add_thread(protothread_toggle25);
+
+    pt_add_thread(protothread_playback);
 
     // Add core 0 threads
     pt_add_thread(protothread_core_0) ;
