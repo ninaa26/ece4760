@@ -213,14 +213,47 @@ oscilloscope measurement.
 | ADC reading, slider at top | ___ | ~4095 |
 | Scope settings used | ___ V/div, ___ µs/div | 0.5 V/div, 250 µs/div at 800 Hz |
 
+### Order the work was done in
+
+Deliberately one change at a time, testing between each, so that when something
+broke it was obvious which change broke it.
+
+1. Flashed a pre-built `.uf2` before any wiring existed, to prove the laptop,
+   cable and board all worked. From that point any failure had to be wiring or
+   code, which is a much smaller search space.
+2. Wired the DAC — power and ground first, then the three SPI lines, then LDAC
+   to ground — and checked VDD/VSS twice before applying power.
+3. Loaded the unmodified timer-interrupt DDS demo and looked at VOUTA on the
+   scope.
+4. Added the 3.5 mm jack and listened.
+5. Moved the output to channel B by changing the configuration constant. A
+   one-line change, and the point of it is to prove the DAC command word is
+   understood rather than copied.
+6. Wired the potentiometer and flashed the **ADC demo on its own**, watching
+   values on the serial terminal. Testing it in isolation means a bad reading
+   can only be wiring.
+7. Integrated the two by adding the DDS code into the ADC demo rather than the
+   reverse, following the lab page's advice.
+
 ### Observations
 
-- 
-- 
+- The ISR timing pin already exists in the starter demo as `ISR_GPIO 2`, so the
+  week 2 measurement requirement needs no new code — only a probe.
+- The demo's default tone is 800 Hz, set by `phase_incr_main` being initialised
+  from `(800.0*two32)/Fs`.
+- Integration was done by putting the pot read in a protothread and leaving the
+  ISR untouched. The ISR still only accumulates, looks up and ships.
 
 ### Problems and how they were resolved
 
-- 
+- **Toolchain would not link.** Homebrew's `arm-none-eabi-gcc` compiled but
+  failed with `cannot find -lc` / `cannot find -lg`. Cause: no newlib in that
+  formula. Replaced with the official Arm GNU toolchain. See section 2.
+- **Frequency mapping was wrong and went unnoticed.** The integration wrote
+  `phase_incr_main = (adc_val*two32)/Fs`, which puts the ADC reading straight
+  into the frequency slot — so the slider spanned 0–4095 Hz, not the 0–10 kHz
+  the checkpoint asks for. A cardinal reaches 7 kHz, so the top of the sweep was
+  unreachable. Not caught until the week 2 code review; fixed in `42adcbb`.
 
 ---
 
@@ -251,18 +284,101 @@ envelopes.
 | Recording length, 2 s hold | ___ samples | ~200 at 100 Hz |
 | Keys verified working | ___ | all twelve |
 
+### Order the work was done in
+
+1. Wired the keypad — seven wires plus four 330 Ω row resistors — and flashed
+   the **keypad demo on its own**, pressing all twelve keys before merging
+   anything. Same isolation principle as the ADC demo in week 1.
+2. Copied the scanning loop into the Lab 1 project along with
+   `pt_cornell_rp2040_v1_4.h`, and confirmed key numbers still printed while
+   the tone was still playing. Two things coexisting was the milestone, before
+   any behaviour was attached to a key.
+3. Built the four-state debounce machine **around** the existing scan rather
+   than modifying it: the scan already produces one number per pass, and the
+   state machine was added where the `printf` had been.
+4. Added record mode and a separate playback protothread.
+5. Full code review, which found twelve defects (section 8), fixed in four
+   commits.
+6. Added the amplitude envelope.
+
 ### Observations
 
-- 
-- 
+- The keypad demo prints the key index directly: `0`–`9` for the digits, `10`
+  for `*`, `11` for `#`, and `-1` for nothing pressed. Convenient — for the
+  digits the number printed *is* the key.
+- The scan drives one row low at a time (`scancodes` are `0xE, 0xD, 0xB, 0x7`,
+  each with a single zero bit) and reads three columns held high by the Pico's
+  internal pull-ups. A column reading 0 identifies the closed switch.
+- The demo already yields for 30 000 µs between scans, which is exactly the
+  30 ms debounce sampling period wanted, so no timing had to be changed.
+- The debounce machine needs two variables that survive between passes: the
+  state, and the candidate key being watched. The candidate matters — it is
+  what stops sliding a finger onto a different key reading as the same press
+  continuing.
+- The action must fire on the **transition** into PRESSED, not while sitting in
+  PRESSED. The `case PRESSED` branch deliberately does nothing; that empty
+  branch is what stops one resting finger firing 33 times a second.
+- Recording had to go in the 100 Hz ADC thread rather than the 33 Hz keypad
+  thread, because the lab asks for ~100 Hz storage. This was not obvious from
+  the lab text and is the structural decision of the week.
 
 ### Problems and how they were resolved
 
-See the bug log in section 8.
+Twelve defects, listed with causes and fixes in section 9. The ones that cost
+the most time to understand:
+
+- **Record and play behaved randomly.** Cause was subtle: `recorded[]` was a
+  non-static local inside a protothread. Confirmed by reading the library's own
+  macros — `LC_RESUME(s) switch(s) { case 0:` and
+  `LC_SET(s) s = __LINE__; case __LINE__:` — which show that resuming jumps to
+  a `case` label past the declaration, so its initialiser never re-runs and the
+  storage is not preserved.
+- **Playback fought the potentiometer.** Both the ADC thread and the playback
+  thread wrote the pitch at 100 Hz with nothing arbitrating.
+- **Recordings disappeared.** Entering record mode cleared every flag, so
+  nothing survived a mode toggle.
 
 ---
 
-## 7. Design decisions
+## 7. Method and verification
+
+Practices used throughout, worth stating because several of the bugs were
+caught by them rather than by luck.
+
+**One change at a time, tested between.** Every merge step above was verified
+before the next began. Most of the lost time in this lab came from the one
+place this was not done — the frequency mapping went in with the integration
+and was not checked against the checkpoint's stated range.
+
+**Each demo flashed standalone before integration.** The ADC demo and the
+keypad demo were both run alone first, so a bad reading could only mean wiring.
+
+**Design questions taken to the course forum** rather than guessed. Three
+answers shaped the design directly: Bruce Land on recording length, Hunter
+Adams on record-mode behaviour and on whether the recorded pitch follows the
+slider, and Dennis Bui on using `uint16_t`. All three are cited in section 8.
+
+**Datasheets read rather than assumed.** The potentiometer pinout came from the
+CIRCUIT drawing in `4219_C11375.pdf`, not from guessing which leg was the
+wiper. The keypad pin order came from the labels printed on the part, which
+turned out to contradict the comment in the course demo.
+
+**Limits measured, not estimated.** The storage ceiling in section 8 was found
+by compiling at increasing array sizes until the linker refused, rather than by
+arithmetic on the datasheet's RAM figure.
+
+**Code checked against the course demo repository for idiom.** Before keeping a
+construct, it was counted in Hunter's demos: `static inline` appears 12 times
+and `(float)` casts 37 times, so both are in scope; the ternary `?:` appears
+zero times, so two uses of it were rewritten as `if`/`else` in `388fd74`.
+
+**Repository verified from a clean clone.** Cloned fresh into an empty
+directory and built, which caught `build.sh` resolving paths from a hard-coded
+home directory instead of from its own location (`d5fc679`).
+
+---
+
+## 8. Design decisions
 
 **Store the pitch, not the audio.** A recording is a list of frequencies
 sampled at 100 Hz, not a waveform. Audio would be 50 000 numbers a second;
@@ -366,7 +482,7 @@ week 3 requires. The earlier design is preserved at commit `ca9cdfb`.
 
 ---
 
-## 8. Bug log
+## 9. Bug log
 
 Bugs found by review after week 2 and the commits that fixed them.
 
@@ -393,7 +509,7 @@ program already knows appears, expect the two to drift.
 
 ---
 
-## 9. Prep question answers
+## 10. Prep question answers
 
 The prep sheet is from the 2021 PIC32 version of the course, so the reasoning
 transfers but the numbers do not. Both are given.
@@ -440,7 +556,7 @@ as a vertical smear on the spectrogram.
 
 ---
 
-## 10. AI prompt log
+## 11. AI prompt log
 
 Tool: Claude (Claude Code), used across two sessions on 2026-09-04 and
 2026-09-10. Every AI-assisted commit carries a `Co-Authored-By` trailer, so
@@ -497,7 +613,7 @@ documentation, not lab code. They were AI-written: `958ee7c`, `d5fc679`,
 
 ---
 
-## 11. Capturing the report figures
+## 12. Capturing the report figures
 
 ### Scope trace: rise, sustain, fall
 
@@ -540,7 +656,7 @@ in the report.
 ### Code listing
 
 `Lab1_Birdsong/dactest.c`. Check before submitting that no comment contradicts
-its line — four did, and they are logged in section 8.
+its line — four did, and they are logged in section 9.
 
 ### Photograph
 
@@ -548,7 +664,7 @@ Breadboard from directly above, with the keypad and potentiometer in place.
 
 ---
 
-## 12. Still to do
+## 13. Still to do
 
 ### Before the week 3 checkout
 
