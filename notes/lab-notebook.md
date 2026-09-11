@@ -9,7 +9,62 @@ write a number here that was not read off an instrument.
 
 ---
 
-## 1. System as built
+## 1. Timeline
+
+| Date | Work |
+| --- | --- |
+| 2026-09-04 | Toolchain built and verified; repo created; Lab 1 project started from Hunter's `a_Timer_Interrupt_DDS_Demo`. Week 1 lab session. |
+| 2026-09-10 | Week 2 work: keypad integrated, debounce state machine, record mode, playback thread. Code review, twelve bugs fixed, amplitude envelope added. |
+
+---
+
+## 2. Development environment
+
+| Component | Version | Location |
+| --- | --- | --- |
+| Pico C/C++ SDK | 2.3.0 | `~/pico-sdk` |
+| Arm GNU toolchain | 14.2.Rel1 | `~/.pico-sdk/toolchain/14_2_Rel1` |
+| CMake | 4.4.3 | Homebrew |
+| Ninja | 1.13.2 | Homebrew |
+| Host | macOS, Apple Silicon | |
+
+`PICO_SDK_PATH` and `PICO_TOOLCHAIN_PATH` are exported from `~/.zshrc`.
+`./build.sh <project>` wraps cmake and ninja and resolves every path relative to
+itself, so the repo builds from a clean clone in any directory (verified).
+
+### Environment problems worth recording
+
+**Homebrew's `arm-none-eabi-gcc` has no C library.** It compiles happily and
+then fails at link:
+
+```
+arm-none-eabi-ld: cannot find -lg: Invalid argument
+arm-none-eabi-ld: cannot find -lc: Invalid argument
+```
+
+The Homebrew formula ships without newlib. Replaced with the official Arm GNU
+toolchain, unpacked to `~/.pico-sdk/toolchain/`, and the Homebrew version was
+removed so it could not shadow the working one. Symptom to remember: those two
+specific `-lc` / `-lg` errors mean a compiler with no standard library, not a
+problem with your code.
+
+**`printf` does not come out of the USB cable.** None of the course demos
+enable USB stdio, and the SDK default sends stdout to **UART0 on GPIO 0 (TX)
+and GPIO 1 (RX)**. `screen /dev/tty.usbmodem*` shows nothing no matter how
+correct everything else is. Either attach a USB-to-serial adapter to GPIO 0, 1
+and ground, or add to `CMakeLists.txt`:
+
+```
+pico_enable_stdio_usb(Audio_Timer_Interrupt_DDS 1)
+pico_enable_stdio_uart(Audio_Timer_Interrupt_DDS 0)
+```
+
+**Each project needs `pico_sdk_import.cmake` beside its `CMakeLists.txt`.**
+Absent, cmake fails on the `include()` line before doing anything useful.
+
+---
+
+## 3. System as built
 
 ### Hardware
 
@@ -25,12 +80,30 @@ write a number here that was not read off an instrument.
 | — | pot pins 1 and 3 → 3.3 V and GND | 1 and 3 are the track ends |
 | GPIO 9–12 | keypad Row 1–4, each via 330 Ω | resistors are required |
 | GPIO 13–15 | keypad Col 1–3 | direct, internal pull-ups enabled |
+| GPIO 25 | on-board LED | heartbeat, owned by the keypad thread only |
 | DAC pin 6 (VOUTB) | scope probe and audio jack tip | jack sleeve to ground |
 | pin 30 (RUN) ↔ pin 28 (GND) | reset push button | double-press enters bootloader |
 
-Keypad header order on the lab's 3×4 units is
-`Col1 Col2 Col3 Row1 Row2 Row3 Row4 NC`. The header comment in the course
-`keypad.c` assumes a different part and lists rows first — wire by function.
+**Keypad pin order.** The lab's 3×4 keypads are labelled
+`Col1 Col2 Col3 Row1 Row2 Row3 Row4 NC` along the header. The comment at the
+top of the course `keypad.c` describes a different part and lists the rows
+first. Wire by function, not by the pin numbers in that comment — wiring it the
+other way makes every key read as −1.
+
+**Row resistors.** Each row output needs a 330 Ω series resistor. Pressing two
+keys in the same column ties one row output directly to another; if one is
+driving high and the other low they fight, and the resistors limit that
+current. The three column wires need nothing.
+
+**Potentiometer pinout** (Adafruit 4219, datasheet `4219_C11375.pdf`). The
+CIRCUIT drawing on page 1 shows pins 1 and 3 as the ends of the resistive track
+and the arrow into the middle — pin 2 — as the wiper. Taper B, i.e. linear, so
+pitch tracks slider position evenly. 60 mm of travel. The four larger holes in
+the drawing (`4-Ø1.7`) are mounting points, not electrical.
+
+**Reset button.** The project links `pico_bootsel_via_double_reset`, so two
+presses within about 200 ms enter the bootloader. The USB cable never has to
+come out to reflash.
 
 ### Software configuration
 
@@ -48,28 +121,85 @@ Keypad header order on the lab's 3×4 units is
 | `max_amplitude` | `int2fix15(1)` | full scale, 1.0 in fix15 |
 | SPI baud | 20 MHz | 16-bit frames, mode 0 |
 
-Build: `text 27,348 · bss 24,508` of the RP2350's 520 KB.
+Build: `text 27,652 · bss 24,520` of the RP2350's 520 KB.
 
 ### Concurrency structure
 
 | Runs | Rate | Job |
 | --- | --- | --- |
-| `alarm_irq` (ISR) | 50 000 Hz | one audio sample: accumulate → sine table → DAC |
+| `alarm_irq` (ISR) | 50 000 Hz | envelope, DDS, sine lookup, SPI write |
 | `protothread_toggle25` | 100 Hz | read pot, set pitch, append to a recording |
 | `protothread_playback` | 100 Hz | step a stored recording back out |
 | `protothread_core_0` | 33 Hz | scan keypad, debounce, set modes |
 
-Each stored pitch is held for 500 ISR ticks (50 000 / 100), which is why
-sampling the slider at a lazy 100 Hz still produces continuous sound.
+The protothreads library uses the free-running 64-bit system counter via
+`time_us_64()` and **does not claim a hardware alarm**, so alarm 0 is free for
+the audio interrupt. (The equivalent PIC32 library did claim a timer, which is
+what the prep sheet's question 2 is pointing at.)
+
+### Operating the instrument
+
+| Key | Action |
+| --- | --- |
+| `0` | tone generator on / off |
+| `*` | arm recording for the next key pressed |
+| `1`–`9` | while armed: record. Otherwise: play that key back |
+| `#` | unused — compose mode, week 3 |
+
+Recording a swoop: tap `*`, press and hold a key, sweep the slider, release.
+Playing it: tap that key. Recordings persist until deliberately overwritten.
+The slider is ignored during playback.
 
 ---
 
-## 2. Week 1
+## 4. Numerical characterisation
+
+| Quantity | Value | Where it comes from |
+| --- | --- | --- |
+| Phase increment formula | `f × 2³² / Fs` | the DDS relation |
+| Increment at 10 kHz | 858 993 459 | fits a 32-bit unsigned comfortably |
+| Frequency resolution | `Fs / 2³²` = 1.164 × 10⁻⁵ Hz | one unit of increment |
+| Nyquist limit | `Fs / 2` = 25 000 Hz | |
+| Highest output used | 10 000 Hz | 40 % of Nyquist |
+| Samples per cycle at 10 kHz | 5.0 | why the top of the range looks steppy on the scope |
+| Samples per cycle at 2 kHz | 25.0 | |
+| ISR ticks per stored pitch | 500 | 50 000 ÷ 100 — why 100 Hz storage sounds continuous |
+| SPI transfer time | 0.80 µs | 16 bits at 20 MHz = 4 % of the 20 µs budget |
+| DAC resolution | 12 bits, 0–4095 | gain 1×, so 0–2.048 V |
+| ADC resolution | 12 bits, 0–4095 | over 0–3.3 V |
+
+The steppiness at the top of the slider's range is expected, not a fault: five
+samples per cycle is a legitimate reconstruction well below Nyquist, and it is
+worth mentioning in the report rather than presenting as a defect.
+
+### Four different things called "frequency"
+
+Naming that repeatedly caused confusion, worth stating explicitly in the
+report:
+
+| Name | Value | What it is |
+| --- | --- | --- |
+| `Fs`, audio sample rate | 50 000 Hz | how often the ISR produces one sample |
+| the pitch | 0–10 000 Hz | the number stored and heard; what the pot sets |
+| recording rate | 100 Hz | how often the pot is sampled while recording |
+| keypad scan rate | 33 Hz | how often the keys are read |
+
+"Store the frequency at ~100 Hz" means the *thing stored* is a pitch of a few
+thousand hertz, and one of them is stored a hundred times a second.
+
+---
+
+## 5. Week 1
 
 **Checkpoint:** DAC wired and producing a tone, confirmed on the scope and
 through an audio jack; output moved to the second DAC channel; reset button
 added; potentiometer wired and verified with the ADC demo; ADC and DDS
 integrated so the slider sets the frequency over 0 to ~10 kHz.
+
+**Concepts exercised:** GPIO and pin function muxing, hardware timer alarms and
+interrupt service routines, Direct Digital Synthesis, SPI and the MCP4822
+command word, ADC and the potentiometer as a voltage divider, Nyquist, and
+oscilloscope measurement.
 
 ### Measurements
 
@@ -94,12 +224,17 @@ integrated so the slider sets the frequency over 0 to ~10 kHz.
 
 ---
 
-## 3. Week 2
+## 6. Week 2
 
 **Checkpoint:** keypad wired and verified; key 0 toggles the tone on a clean
 debounced press; `*` enters record mode; holding a key 1–9 records the
 frequency while held; pressing that key again plays the recording back; ISR
 execution time measured on the scope.
+
+**Concepts exercised:** matrix keypad scanning, contact bounce and a four-state
+debounce machine, protothreads and cooperative scheduling, sharing state
+between a thread and an interrupt, array storage sizing, and amplitude
+envelopes.
 
 ### Measurements
 
@@ -108,14 +243,13 @@ execution time measured on the scope.
 | ISR pulse width on GPIO 2 | ___ µs | small fraction of 20 µs |
 | ISR period on GPIO 2 | ___ µs | 20.0 |
 | ISR duty cycle | ___ % | width ÷ 20 µs |
-| Pulse width before week 2 changes | ___ µs | baseline for comparison |
-| Recording length, 2 s hold | ___ samples | ~200 at 100 Hz |
-| Keys verified working | ___ | all twelve |
 | ISR pulse width **before** the envelope | ___ µs | baseline |
 | ISR pulse width **after** the envelope | ___ µs | wider: one 64-bit multiply added |
 | Increase from the envelope | ___ µs | this is the code-characterisation result |
 | Envelope rise time | ___ ms | 5.0 |
 | Envelope fall time | ___ ms | 5.0 |
+| Recording length, 2 s hold | ___ samples | ~200 at 100 Hz |
+| Keys verified working | ___ | all twelve |
 
 ### Observations
 
@@ -124,18 +258,18 @@ execution time measured on the scope.
 
 ### Problems and how they were resolved
 
-See the bug log in section 5.
+See the bug log in section 8.
 
 ---
 
-## 4. Design decisions
+## 7. Design decisions
 
 **Store the pitch, not the audio.** A recording is a list of frequencies
 sampled at 100 Hz, not a waveform. Audio would be 50 000 numbers a second;
 pitches are 100 — five hundred times less. It also means playback can be sped
-up 8–10× in week 3 without the pitch rising, because speeding up a list of
-pitches replays the same notes faster, where speeding up audio would raise
-every frequency.
+up 8–10× in week 3 without the pitch rising: speeding up a list of pitches
+replays the same notes faster, where speeding up audio would raise every
+frequency. The analogy is a player-piano roll rather than a tape.
 
 **Recording lives in the 100 Hz thread, not the keypad thread.** The lab asks
 for ~100 Hz storage and the keypad thread runs at 33 Hz, so capturing there
@@ -149,6 +283,7 @@ they alternate and the slider overwrites roughly half the recorded samples.
 **`uint16_t` for stored pitches.** The range tops out at 10 000 and a uint16
 holds 65 535, so pitches fit in half the space of a 32-bit phase increment.
 Inspecting the array also shows a readable `3400` rather than `292057776`.
+Suggested on the course forum by Dennis Bui.
 
 **Fixed-size arrays, not dynamic allocation.** 20 KB is small enough that
 resizable storage buys nothing, and `malloc` in a system with a 50 kHz
@@ -189,24 +324,55 @@ until it reaches the ceiling or zero. At zero the sine is multiplied away and
 the output sits at mid-scale 2048, which is silence — so muting no longer needs
 a special case.
 
-### Open design question
+### Recording length
 
-`*` currently **arms** recording for one key and disarms on release, and keys
-1–9 play back in normal mode without entering any mode. An earlier version had
-`*` toggle a mode, with the first press of a key recording and the second
-playing. The current behaviour matches the lab text and Hunter's forum answer
-about pressing `*` between each note, and it lets recordings persist for
-compose mode in week 3. The earlier design is preserved at commit `ca9cdfb`.
+Bruce Land on the course forum: there is no specification, a minute per key is
+probably overkill, and since the memory is ours, we may as well find out how
+large an array the machine will take. Measured by building at increasing sizes
+until the linker refused:
+
+| `MAX_SAMPLES` | Seconds per key | Total RAM | Links? |
+| --- | --- | --- | --- |
+| 1 000 | 10 | 24 KB | yes ← chosen |
+| 5 000 | 50 | 102 KB | yes |
+| 10 000 | 100 | 200 KB | yes |
+| 20 000 | 200 | 395 KB | yes |
+| 24 000 | 240 | 473 KB | yes |
+| 25 000 | 250 | 493 KB | yes — the largest that links |
+| 26 000 | 260 | — | **no**, "will not fit in region" |
+
+So the hard ceiling is about four minutes per key on a 520 KB part. 1000 was
+chosen: a cardinal's whistle is well under a second, and at 8–10× playback a
+three-second gesture becomes a 0.3-second chirp, so ten seconds per key is
+already far more than the lab can use. Sitting at 493 KB would leave almost
+nothing for the stack, and stack exhaustion does not announce itself.
+
+### Record-mode behaviour
+
+Hunter Adams on the course forum, asked whether several notes can be recorded
+per `*` press: he imagined pressing `*` again between each note, found the
+device easier to use when it defaults to *not* recording, and is happy for this
+to be a design decision. Asked whether the recorded frequency follows the
+potentiometer while a key is held: yes — the frequency being recorded is set by
+the potentiometer, and the rate at which the ADC is read need not change from
+~100 Hz.
+
+Implemented accordingly: `*` **arms** recording for one key and disarms on
+release, and keys 1–9 play back in normal mode without entering any mode. An
+earlier version had `*` toggle a mode, with the first press of a key recording
+and the second playing; that version also cleared every slot on entering record
+mode, so recordings could not survive a mode toggle — which compose mode in
+week 3 requires. The earlier design is preserved at commit `ca9cdfb`.
 
 ---
 
-## 5. Bug log
+## 8. Bug log
 
 Bugs found by review after week 2 and the commits that fixed them.
 
 | # | Symptom | Cause | Fixed in |
 | --- | --- | --- | --- |
-| 1 | Record and play behaved randomly | `recorded[]` was a non-static local in a protothread. Protothreads resume by jumping into a `switch`, skipping the declaration's initialiser, and non-static locals do not survive a yield | `8f8cfce` |
+| 1 | Record and play behaved randomly | `recorded[]` was a non-static local in a protothread. Protothreads resume by jumping into a `switch` (`LC_RESUME(s) switch(s) { case 0:`), skipping the declaration's initialiser, and non-static locals do not survive a yield | `8f8cfce` |
 | 2 | Silent memory corruption on key 9 | `record_key` ranges 1–9 but the arrays were sized `[9]`, valid indices 0–8 | `8f8cfce` |
 | 3 | Playback sounded like the slider | No mode gate — the ADC thread wrote the pitch unconditionally while the playback thread wrote it too, both at 100 Hz | `b44499f` |
 | 4 | Board booted silent, key 0 did nothing | `tone` initialised false and no `possible_key == 0` case existed | `b44499f` |
@@ -222,11 +388,59 @@ Bugs found by review after week 2 and the commits that fixed them.
 **Pattern:** five of the twelve are the same mistake — the same fact stored in
 two places. Two copies of the conversion; a `recorded[]` flag beside the length
 that already implied it; two threads writing one pitch; two owning one LED;
-comments disagreeing with their code.
+comments disagreeing with their code. Whenever a second copy of something the
+program already knows appears, expect the two to drift.
 
 ---
 
-## 6. AI prompt log
+## 9. Prep question answers
+
+The prep sheet is from the 2021 PIC32 version of the course, so the reasoning
+transfers but the numbers do not. Both are given.
+
+**Q1 — maximum current per I/O pin, and summed across all pins.**
+PIC32: read the Absolute Maximum Ratings table; it gives a per-pin limit and a
+separate, much smaller, total-across-all-pins limit. RP2040/RP2350: each GPIO's
+drive strength is configurable at 2, 4, 8 or 12 mA, and the practical ceiling
+for the whole board is set by the Pico's 3.3 V regulator rather than by the
+chip. Either way the takeaway is the same: a GPIO drives a signal, not a load.
+
+**Q2 — what hardware do protothreads use?**
+The point of the question is that you must not reuse whatever timer the library
+has claimed. On the RP2040/RP2350 version used here, the library calls
+`time_us_64()` — the free-running 64-bit system counter — and claims **no**
+hardware alarm, so alarm 0 is available for the audio interrupt. The PIC32
+version did claim a timer.
+
+**Q3 — timer period for a 44 kHz interrupt from a 40 MHz clock, prescaler 1.**
+
+```
+40,000,000 / 44,000 = 909.09  →  909 timer cycles
+```
+
+On the RP2350 the same thing is expressed as a period in microseconds:
+1/44 000 ≈ 22.7 µs. This project runs at Fs = 50 kHz, so `DELAY` is 20 µs.
+
+**Q4 — DDS frequency resolution with a 32-bit accumulator.**
+The smallest change is one unit of increment:
+
+```
+Fs / 2³²  =  44,000 / 4,294,967,296  ≈  1.02 × 10⁻⁵ Hz   (sheet's 44 kHz)
+Fs / 2³²  =  50,000 / 4,294,967,296  ≈  1.16 × 10⁻⁵ Hz   (this project)
+```
+
+Far finer than anything audible. The accumulator's low bits carry
+fractional-sample phase, so accuracy is limited by the clock, not the
+arithmetic.
+
+**Q5 — alternatives to a linear ramp.**
+See the envelope table in section 7. The underlying tension: any sudden change
+in amplitude spreads energy across all frequencies, heard as a click and seen
+as a vertical smear on the spectrogram.
+
+---
+
+## 10. AI prompt log
 
 Tool: Claude (Claude Code), used across two sessions on 2026-09-04 and
 2026-09-10. Every AI-assisted commit carries a `Co-Authored-By` trailer, so
@@ -246,43 +460,44 @@ git log --format='%h %s %(trailers:key=Co-Authored-By,valueonly)'
 | `8f8cfce` | +10 −3 | AI | Bugs 1 and 2 |
 | `b44499f` | +15 −4 | AI | Bugs 3 and 4 |
 | `42adcbb` | +52 −62 | AI | Bugs 5–12 and the record-mode restructure |
-| `388fd74` | +10 −2 | AI | Replaced `?:` with `if`/`else` (the ternary is not used anywhere in the course demos) |
+| `388fd74` | +10 −2 | AI | Replaced `?:` with `if`/`else` (the ternary appears nowhere in the course demos) |
+| `06214f1` | +49 −13 | AI | Amplitude envelope, fix15 macros, fix15 sine table |
 
 **Totals for the lab source file:**
 
 - Written by Nina: **+595 −285**
-- Suggested by AI: **+87 −71** across four commits
-- Accepted: **all of them** (87 insertions, 71 deletions)
-- Rejected / reverted: **none**
+- Suggested by AI: **+136 −84** across five commits
+- Accepted: **all of them**
+- Rejected or reverted: **none**
 
 ### What was asked, and what came back
 
 | Asked | AI response | Accepted |
 | --- | --- | --- |
-| Explain the lab, set up the toolchain | Installed SDK 2.3.0, Arm GCC 14.2, CMake, Ninja, VS Code extensions; created the repo | yes |
+| Explain the lab; set up the toolchain | Installed SDK 2.3.0, Arm GCC 14.2, CMake, Ninja, VS Code extensions; created the repo; found and worked around the Homebrew newlib problem | yes |
 | "what is wrong with my code" | Review listing 4 critical bugs, 2 sound bugs, 1 design question, 5 minor | reviewed |
 | "fix 1 and 2" | +10 −3 | yes |
 | "fix 3 and 4" | +15 −4 | yes |
 | "is there anything else to fix" | Found 3 further issues not in the first review, including the vanishing recordings | reviewed |
 | "fix all" | +52 −62, including a design change to record mode | yes |
-| "is there anything more advanced than the class" | Checked each construct against the course demo repo; found `?:` used 0 times there | yes, +10 −2 |
-| Explanations only (no code) | Debouncing, DDS, SPI, protothreads, matrix keypads, the C syntax of the state machine | n/a |
+| "is there anything more advanced than the class" | Checked each construct against the course demo repo; `static inline` used 12 times there and `(float)` 37 times, but `?:` zero times | yes, +10 −2 |
+| "add envelope" | fix15 macros and a 5 ms linear attack/decay, following the beep demo | yes |
+| Explanations only, no code | Debouncing, DDS, SPI, protothreads, matrix keypads, the C syntax of `switch`/`case`, what a recording actually contains | n/a |
 
 ### Non-source changes
 
-`build.sh`, `README.md` and `.gitignore` are build tooling, not lab code. They
-were AI-written: `958ee7c`, `d5fc679`, `0baf665`, `d2ece5f`.
+`build.sh`, `README.md`, `.gitignore` and this notebook are tooling and
+documentation, not lab code. They were AI-written: `958ee7c`, `d5fc679`,
+`0baf665`, `d2ece5f`, `a2623b8`, `06214f1`.
 
-### Notes for the report
+### Reference pages produced during the work
 
-Two reference pages were produced during the work and may be cited:
-
-- Field guide (setup, concepts, wiring diagrams, weekly walkthrough)
-- Fix log (all twelve fixes with before/after code)
+- Field guide — setup, concepts, wiring diagrams, week-by-week walkthrough
+- Fix log — all twelve fixes with before and after code
 
 ---
 
-## 7. Capturing the report figures
+## 11. Capturing the report figures
 
 ### Scope trace: rise, sustain, fall
 
@@ -325,7 +540,7 @@ in the report.
 ### Code listing
 
 `Lab1_Birdsong/dactest.c`. Check before submitting that no comment contradicts
-its line — four did, and they are logged in section 5.
+its line — four did, and they are logged in section 8.
 
 ### Photograph
 
@@ -333,7 +548,7 @@ Breadboard from directly above, with the keypad and potentiometer in place.
 
 ---
 
-## 8. Still to do
+## 12. Still to do
 
 ### Before the week 3 checkout
 
@@ -346,8 +561,7 @@ Breadboard from directly above, with the keypad and potentiometer in place.
 ### Report deliverables
 
 - [ ] Scope trace of a swoop showing rise, sustain and fall
-- [ ] Spectrogram of the MCU's own output (aux cable into the laptop, then
-      Audacity / WaveForms / Python, or the Merlin app)
+- [ ] Spectrogram of the MCU's own output
 - [ ] Heavily commented code listing
 - [ ] This prompt log, with final numbers
 - [ ] Photograph of the breadboard
