@@ -291,7 +291,11 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
                     if (possible_key == 0){
                         // FIX 4 - key 0 toggles the tone generator on and off
                         tone = !tone ;
-                        printf("tone %s\n", tone ? "on" : "off") ;
+                        if (tone) {
+                            printf("tone on\n") ;
+                        } else {
+                            printf("tone off\n") ;
+                        }
 
                     } else if (possible_key == 10){
                         // The * key ARMS recording for the next key pressed.
@@ -300,7 +304,11 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
                         record_mode = !record_mode ;
                         recording = false;
                         playing = false;
-                        printf("record mode %s\n", record_mode ? "armed" : "off") ;
+                        if (record_mode) {
+                            printf("record mode armed\n") ;
+                        } else {
+                            printf("record mode off\n") ;
+                        }
 
                     } else if (possible_key > 0 && possible_key < 10){
                         record_key = possible_key;
