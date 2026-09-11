@@ -56,8 +56,8 @@ correct everything else is. Either attach a USB-to-serial adapter to GPIO 0, 1
 and ground, or add to `CMakeLists.txt`:
 
 ```
-pico_enable_stdio_usb(Audio_Timer_Interrupt_DDS 1)
-pico_enable_stdio_uart(Audio_Timer_Interrupt_DDS 0)
+pico_enable_stdio_usb(birdsong 1)
+pico_enable_stdio_uart(birdsong 0)
 ```
 
 **Each project needs `pico_sdk_import.cmake` beside its `CMakeLists.txt`.**
@@ -567,7 +567,7 @@ Tool: Claude (Claude Code), used across two sessions on 2026-09-04 and
 git log --format='%h %s %(trailers:key=Co-Authored-By,valueonly)'
 ```
 
-### Code changes to `Lab1_Birdsong/dactest.c`
+### Code changes to `Lab1_Birdsong/birdsong.c`
 
 | Commit | Lines | Author | What |
 | --- | --- | --- | --- |
@@ -656,7 +656,7 @@ in the report.
 
 ### Code listing
 
-`Lab1_Birdsong/dactest.c`. Check before submitting that no comment contradicts
+`Lab1_Birdsong/birdsong.c`. Check before submitting that no comment contradicts
 its line — four did, and they are logged in section 9.
 
 ### Photograph

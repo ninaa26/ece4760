@@ -20,7 +20,7 @@ unset it looks in `~/pico-sdk` and prints the clone command if it is not there.
 
 Hold BOOTSEL, plug in USB, wait for the drive, then:
 
-    cp build/Lab1_Birdsong-pico2/*.uf2 /Volumes/RP2350/
+    cp build/Lab1_Birdsong-pico2/birdsong.uf2 /Volumes/RP2350/
 
 The drive is `RP2350` on a Pico 2, `RPI-RP2` on a Pico 1. It unmounts itself the
 moment the copy finishes — that is success. Ignore the macOS eject warning.
@@ -75,20 +75,27 @@ USB-to-serial adapter to those two pins plus ground:
 
 To send it over the USB cable instead, add to `Lab1_Birdsong/CMakeLists.txt`:
 
-    pico_enable_stdio_usb(Audio_Timer_Interrupt_DDS 1)
-    pico_enable_stdio_uart(Audio_Timer_Interrupt_DDS 0)
+    pico_enable_stdio_usb(birdsong 1)
+    pico_enable_stdio_uart(birdsong 0)
 
-## Layout
+## What is in here
 
-| Path | What it is |
-| --- | --- |
-| `Lab1_Birdsong/` | Lab 1 project. Started from `Audio/a_Timer_Interrupt_DDS_Demo` in Hunter Adams' demo repo |
-| `build.sh` | cmake/ninja wrapper. Build tooling only, no lab code |
-| `notes/lab-notebook.md` | Bench measurements and the AI prompt log the report requires |
-| `Hunter-Adams-RP2040-Demos/` | Upstream demos, cloned separately (gitignored) |
-| `build/` | Build output (gitignored) |
+```
+ece4760/
+├── Lab1_Birdsong/          the lab project
+│   ├── birdsong.c          all of the lab code — the only file you edit
+│   ├── CMakeLists.txt      build recipe: sources and SDK libraries
+│   ├── pt_cornell_rp2040_v1_4.h   protothreads (Bruce Land), unmodified
+│   └── pico_sdk_import.cmake      SDK boilerplate, unmodified
+├── notes/
+│   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
+│   └── figures/            scope traces and photos for the report
+├── build.sh                cmake/ninja wrapper — build tooling, not lab code
+└── README.md
+```
 
-Optional, for browsing the reference demos:
+Not tracked (see `.gitignore`): `build/` output, and
+`Hunter-Adams-RP2040-Demos/` if you clone the reference demos alongside:
 
     git clone https://github.com/vha3/Hunter-Adams-RP2040-Demos.git
 
