@@ -6,7 +6,28 @@ Board: Raspberry Pi Pico 2 (RP2350).
 Field guide (setup, concepts, wiring diagrams, week-by-week walkthrough):
 https://claude.ai/code/artifact/bb80ce5d-de5f-4b22-81be-ca5ed6dc881d
 
-## Start from nothing
+## What is in here
+
+```
+ece4760/
+├── Lab1_Birdsong/          the lab project
+│   ├── birdsong.c          all of the lab code — the only file you edit
+│   ├── CMakeLists.txt      build recipe: sources and SDK libraries
+│   ├── pt_cornell_rp2040_v1_4.h   protothreads (Bruce Land), unmodified
+│   └── pico_sdk_import.cmake      SDK boilerplate, unmodified
+├── notes/
+│   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
+│   └── figures/            scope traces and photos for the report
+├── build.sh                cmake/ninja wrapper — build tooling, not lab code
+└── README.md
+```
+
+Not tracked (see `.gitignore`): `build/` output, and
+`Hunter-Adams-RP2040-Demos/` if you clone the reference demos alongside:
+
+    git clone https://github.com/vha3/Hunter-Adams-RP2040-Demos.git
+
+## Build
 
     git clone https://github.com/ninaa26/ece4760.git
     cd ece4760
@@ -27,13 +48,6 @@ moment the copy finishes — that is success. Ignore the macOS eject warning.
 
 With the reset button wired (physical pin 30 RUN to pin 28 GND), two fast presses
 enter the bootloader, so the cable never has to come out.
-
-## Build options
-
-    ./build.sh Lab1_Birdsong                  # Pico 2 (default)
-    PICO_BOARD=pico ./build.sh Lab1_Birdsong  # original Pico 1
-    DEBUG=1 ./build.sh Lab1_Birdsong          # unoptimised + symbols, for a debug probe
-    ./build.sh ADC/Simple_Demo                # any project inside the demo repo
 
 ## Using the instrument
 
@@ -78,26 +92,12 @@ To send it over the USB cable instead, add to `Lab1_Birdsong/CMakeLists.txt`:
     pico_enable_stdio_usb(birdsong 1)
     pico_enable_stdio_uart(birdsong 0)
 
-## What is in here
+## Build options
 
-```
-ece4760/
-├── Lab1_Birdsong/          the lab project
-│   ├── birdsong.c          all of the lab code — the only file you edit
-│   ├── CMakeLists.txt      build recipe: sources and SDK libraries
-│   ├── pt_cornell_rp2040_v1_4.h   protothreads (Bruce Land), unmodified
-│   └── pico_sdk_import.cmake      SDK boilerplate, unmodified
-├── notes/
-│   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
-│   └── figures/            scope traces and photos for the report
-├── build.sh                cmake/ninja wrapper — build tooling, not lab code
-└── README.md
-```
-
-Not tracked (see `.gitignore`): `build/` output, and
-`Hunter-Adams-RP2040-Demos/` if you clone the reference demos alongside:
-
-    git clone https://github.com/vha3/Hunter-Adams-RP2040-Demos.git
+    ./build.sh Lab1_Birdsong                  # Pico 2 (default)
+    PICO_BOARD=pico ./build.sh Lab1_Birdsong  # original Pico 1
+    DEBUG=1 ./build.sh Lab1_Birdsong          # unoptimised + symbols, for a debug probe
+    ./build.sh ADC/Simple_Demo                # any project inside the demo repo
 
 ## Environment
 
