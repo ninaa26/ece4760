@@ -295,9 +295,14 @@ static PT_THREAD (protothread_playback(struct pt *pt))
                     time_us_64() >= play_t0 + (uint64_t)(sample + 1) * 1000ull) ;
             }
 
-            printf("played key %d: %d samples in %llu ms\n",
-                   play_key, sample,
-                   (unsigned long long)((time_us_64() - play_t0) / 1000)) ;
+            // Only report a single key press. printf blocks for a few ms on
+            // the UART, and while the absolute deadline below absorbs that,
+            // there is no reason to put it between every note of a phrase.
+            if (!playing_sequence) {
+                printf("played key %d: %d samples in %llu ms\n",
+                       play_key, sample,
+                       (unsigned long long)((time_us_64() - play_t0) / 1000)) ;
+            }
 
             playing = false;
 
