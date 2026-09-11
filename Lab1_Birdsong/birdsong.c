@@ -260,7 +260,22 @@ static PT_THREAD (protothread_playback(struct pt *pt))
 
                 playback_adc = recordings[play_key][sample];
 
-                phase_incr_main = adc_to_phase_incr(playback_adc);
+                // A stored value of zero means silence. Driving `tone` from it
+                // makes the ISR's 5 ms attack/decay ramp every syllable in and
+                // out, instead of every note starting and stopping as a step.
+                //
+                // This matters for more than the clicks. Merlin identifies
+                // birds with a convolutional network looking at a SPECTROGRAM
+                // IMAGE, and a step in amplitude draws a vertical smear across
+                // the whole frequency band at every note edge - a mark no real
+                // bird makes. Ramped edges remove it, so the picture is just
+                // the frequency contour, which is what the model was trained
+                // on.
+                tone = (playback_adc > 0) ;
+
+                if (playback_adc > 0) {
+                    phase_incr_main = adc_to_phase_incr(playback_adc);
+                }
 
                 // This wait IS the playback speed. Every sample is still read;
                 // we simply do not dawdle between them. Recording captures one

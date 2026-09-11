@@ -8,91 +8,155 @@
 #define SIL(ms) { (ms), 0.f, 0.f, 0.f }      // silence
 
 // ---------------------------------------------------------------------------
-// Building blocks. The figures in square brackets are the published ones.
+// Nine complete songs. Cardinals have 8-10 song types built from 8-21 syllable
+// types, each song lasting 2-3 seconds, with a phrase usually repeated 2-3
+// times (Cornell Lab / Birds of the World).
+//
+// Keys 1 and 2 use the measured Wisconsin figures. The other seven are built
+// from the qualitative descriptions - down-slurred whistles, two-parted
+// whistles, series that speed up and end in a trill - and are the ones to tune
+// by ear against Merlin.
 // ---------------------------------------------------------------------------
 
-// [Hunter Adams] 130 ms, 1740 -> 2000 -> 1740
-static const cardinal_segment_t seg_swoop[] = {
-    { 130, 1740.f, 2000.f, 1740.f },
-};
-
-// [Wisconsin type A] "what": ~0.1 s ascending 2 -> 4 kHz
-static const cardinal_segment_t seg_what_fast[] = {
-    { 100, 2000.f, 3000.f, 4000.f },
-};
-
-// [Wisconsin type A] "cheer": ~0.6 s descending 6 -> 2 kHz
-static const cardinal_segment_t seg_cheer_high[] = {
-    { 600, 6000.f, 4000.f, 2000.f },
-};
-
-// [Wisconsin type B] "what": ~0.5 s ascending 2 -> 4 kHz
-static const cardinal_segment_t seg_what_slow[] = {
-    { 500, 2000.f, 3000.f, 4000.f },
-};
-
-// [Wisconsin type B] "cheer": ~0.4 s descending 2.5 -> 1 kHz
-static const cardinal_segment_t seg_cheer_low[] = {
-    { 400, 2500.f, 1750.f, 1000.f },
-};
-
-// Sharp "chip" contact note. Shaped, not measured.
-static const cardinal_segment_t seg_chip[] = {
-    {  40, 5000.f, 4000.f, 3000.f },
-};
-
-// ---------------------------------------------------------------------------
-// Complete songs. Cornell Lab: a string of down-slurred or two-parted
-// whistles, a phrase repeated 2-3 times, whole song 2-3 seconds.
-// ---------------------------------------------------------------------------
-
-// "what cheer, cheer, cheer" - Wisconsin type A. 2140 ms.
+// SONG what-cheer-cheer-cheer - Wisconsin type A, measured. 2140 ms.
 static const cardinal_segment_t seg_song_a[] = {
-    { 100, 2000.f, 3000.f, 4000.f },   // what
+    {  100,  2000.0f,  3000.0f,  4000.0f },
     SIL(80),
-    { 600, 6000.f, 4000.f, 2000.f },   // cheer
+    {  600,  6000.0f,  4000.0f,  2000.0f },
     SIL(80),
-    { 600, 6000.f, 4000.f, 2000.f },   // cheer
+    {  600,  6000.0f,  4000.0f,  2000.0f },
     SIL(80),
-    { 600, 6000.f, 4000.f, 2000.f },   // cheer
+    {  600,  6000.0f,  4000.0f,  2000.0f },
 };
 
-// "what cheer, cheer" - Wisconsin type B, lower and slower. 1460 ms.
+// SONG what-cheer-cheer (low) - Wisconsin type B, measured. 1460 ms.
 static const cardinal_segment_t seg_song_b[] = {
-    { 500, 2000.f, 3000.f, 4000.f },   // what
+    {  500,  2000.0f,  3000.0f,  4000.0f },
     SIL(80),
-    { 400, 2500.f, 1750.f, 1000.f },   // cheer
+    {  400,  2500.0f,  1750.0f,  1000.0f },
     SIL(80),
-    { 400, 2500.f, 1750.f, 1000.f },   // cheer
+    {  400,  2500.0f,  1750.0f,  1000.0f },
 };
 
-// "birdy birdy birdy" - two-parted whistles, speeding up. 1270 ms.
+// SONG cheer-cheer-cheer - down-slurred whistles. 1980 ms.
+static const cardinal_segment_t seg_song_cheer[] = {
+    {  600,  6000.0f,  4000.0f,  2000.0f },
+    SIL(90),
+    {  600,  6000.0f,  4000.0f,  2000.0f },
+    SIL(90),
+    {  600,  6000.0f,  4000.0f,  2000.0f },
+};
+
+// SONG birdy-birdy-birdy - two-parted, speeding up. 1630 ms.
 static const cardinal_segment_t seg_song_birdy[] = {
-    { 120, 2000.f, 3000.f, 4000.f },   // bir-
-    { 120, 4000.f, 3000.f, 2000.f },   // -dy
-    SIL(140),
-    { 120, 2000.f, 3000.f, 4000.f },
-    { 120, 4000.f, 3000.f, 2000.f },
-    SIL(100),
-    { 120, 2000.f, 3000.f, 4000.f },
-    { 120, 4000.f, 3000.f, 2000.f },
+    {  120,  2000.0f,  3000.0f,  4000.0f },
+    {  120,  4000.0f,  3000.0f,  2000.0f },
+    SIL(150),
+    {  120,  2000.0f,  3000.0f,  4000.0f },
+    {  120,  4000.0f,  3000.0f,  2000.0f },
+    SIL(120),
+    {  120,  2000.0f,  3000.0f,  4000.0f },
+    {  120,  4000.0f,  3000.0f,  2000.0f },
+    SIL(90),
+    {  120,  2000.0f,  3000.0f,  4000.0f },
+    {  120,  4000.0f,  3000.0f,  2000.0f },
     SIL(70),
-    { 120, 2000.f, 3000.f, 4000.f },
-    { 120, 4000.f, 3000.f, 2000.f },
+    {  120,  2000.0f,  3000.0f,  4000.0f },
+    {  120,  4000.0f,  3000.0f,  2000.0f },
+};
+
+// SONG purty-purty-purty - slower two-parted. 1380 ms.
+static const cardinal_segment_t seg_song_purty[] = {
+    {  180,  2200.0f,  3200.0f,  4200.0f },
+    {  180,  4200.0f,  3000.0f,  1800.0f },
+    SIL(150),
+    {  180,  2200.0f,  3200.0f,  4200.0f },
+    {  180,  4200.0f,  3000.0f,  1800.0f },
+    SIL(150),
+    {  180,  2200.0f,  3200.0f,  4200.0f },
+    {  180,  4200.0f,  3000.0f,  1800.0f },
+};
+
+// SONG what-cheer + trill - ends in a trill. 2300 ms.
+static const cardinal_segment_t seg_song_trill[] = {
+    {  100,  2000.0f,  3000.0f,  4000.0f },
+    SIL(80),
+    {  600,  6000.0f,  4000.0f,  2000.0f },
+    SIL(80),
+    {  100,  2000.0f,  3000.0f,  4000.0f },
+    SIL(80),
+    {  600,  6000.0f,  4000.0f,  2000.0f },
+    SIL(100),
+    {   60,  3200.0f,  4200.0f,  3200.0f },
+    SIL(40),
+    {   60,  3200.0f,  4200.0f,  3200.0f },
+    SIL(40),
+    {   60,  3200.0f,  4200.0f,  3200.0f },
+    SIL(40),
+    {   60,  3200.0f,  4200.0f,  3200.0f },
+    SIL(40),
+    {   60,  3200.0f,  4200.0f,  3200.0f },
+    SIL(40),
+    {   60,  3200.0f,  4200.0f,  3200.0f },
+};
+
+// SONG rising series - ascending whistles. 1650 ms.
+static const cardinal_segment_t seg_song_rise[] = {
+    {  250,  2000.0f,  3500.0f,  5000.0f },
+    SIL(100),
+    {  250,  2000.0f,  3500.0f,  5000.0f },
+    SIL(100),
+    {  250,  2000.0f,  3500.0f,  5000.0f },
+    SIL(100),
+    {  250,  2000.0f,  3500.0f,  5000.0f },
+    SIL(100),
+    {  250,  2000.0f,  3500.0f,  5000.0f },
+};
+
+// SONG slow downslurs - long down-slurred. 2340 ms.
+static const cardinal_segment_t seg_song_slow[] = {
+    {  700,  6500.0f,  4000.0f,  1800.0f },
+    SIL(120),
+    {  700,  6500.0f,  4000.0f,  1800.0f },
+    SIL(120),
+    {  700,  6500.0f,  4000.0f,  1800.0f },
+};
+
+// SONG chip series - contact-call series. 1170 ms.
+static const cardinal_segment_t seg_song_chip[] = {
+    {   45,  5000.0f,  4000.0f,  3000.0f },
+    SIL(80),
+    {   45,  5000.0f,  4000.0f,  3000.0f },
+    SIL(80),
+    {   45,  5000.0f,  4000.0f,  3000.0f },
+    SIL(80),
+    {   45,  5000.0f,  4000.0f,  3000.0f },
+    SIL(80),
+    {   45,  5000.0f,  4000.0f,  3000.0f },
+    SIL(80),
+    {   45,  5000.0f,  4000.0f,  3000.0f },
+    SIL(80),
+    {   45,  5000.0f,  4000.0f,  3000.0f },
+    SIL(80),
+    {   45,  5000.0f,  4000.0f,  3000.0f },
+    SIL(80),
+    {   45,  5000.0f,  4000.0f,  3000.0f },
+    SIL(80),
+    {   45,  5000.0f,  4000.0f,  3000.0f },
 };
 
 #define CALL(k, nm, arr) { (k), (nm), (arr), (int)(sizeof(arr)/sizeof((arr)[0])) }
 
 static const cardinal_call_t calls[] = {
-    CALL(1, "swoop",             seg_swoop      ),
-    CALL(2, "what (fast)",       seg_what_fast  ),
-    CALL(3, "cheer (high fall)", seg_cheer_high ),
-    CALL(4, "what (slow)",       seg_what_slow  ),
-    CALL(5, "cheer (low fall)",  seg_cheer_low  ),
-    CALL(6, "chip",              seg_chip       ),
-    CALL(7, "SONG what-cheer-cheer-cheer", seg_song_a     ),
-    CALL(8, "SONG what-cheer-cheer",       seg_song_b     ),
-    CALL(9, "SONG birdy-birdy-birdy",      seg_song_birdy ),
+    CALL(1, "SONG what-cheer-cheer-cheer", seg_song_a),
+    CALL(2, "SONG what-cheer-cheer (low)", seg_song_b),
+    CALL(3, "SONG cheer-cheer-cheer", seg_song_cheer),
+    CALL(4, "SONG birdy-birdy-birdy", seg_song_birdy),
+    CALL(5, "SONG purty-purty-purty", seg_song_purty),
+    CALL(6, "SONG what-cheer + trill", seg_song_trill),
+    CALL(7, "SONG rising series", seg_song_rise),
+    CALL(8, "SONG slow downslurs", seg_song_slow),
+    CALL(9, "SONG chip series", seg_song_chip),
 };
 
 #define N_CALLS ((int)(sizeof(calls) / sizeof(calls[0])))
