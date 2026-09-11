@@ -49,8 +49,9 @@
 volatile unsigned int phase_accum_main;
 volatile unsigned int phase_incr_main;
 
-// turn on/off the tone
-volatile bool tone = false;
+// turn on/off the tone. Starts true: the spec says the system boots in
+// tone generator mode, and key 0 is what silences it.
+volatile bool tone = true;
 
 // SPI data
 uint16_t DAC_data ; // output value
@@ -151,7 +152,12 @@ static PT_THREAD (protothread_toggle25(struct pt *pt))
         // Read the ADC
         adc_val = adc_read() ;
 
-        phase_incr_main = (adc_val*two32)/Fs ;
+        // FIX 3 - the mode gate. protothread_playback also writes
+        // phase_incr_main, at the same 100 Hz. Without this guard the two
+        // threads fight and you hear the slider instead of the recording.
+        if (!playing) {
+            phase_incr_main = (adc_val*two32)/Fs ;
+        }
         // Print the value
         // printf("ADC value: %d\n", adc_val) ;
 
@@ -279,7 +285,12 @@ static PT_THREAD (protothread_core_0(struct pt *pt))
                 if (i == possible_key) {
                     state = PRESSED ;
 
-                    if (possible_key == 10){
+                    if (possible_key == 0){
+                        // FIX 4 - key 0 toggles the tone generator on and off
+                        tone = !tone ;
+                        printf("tone %s\n", tone ? "on" : "off") ;
+
+                    } else if (possible_key == 10){
                         //record mode toggle
                         record_mode = !record_mode ;
                     
