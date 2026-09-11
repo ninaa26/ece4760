@@ -8,155 +8,300 @@
 #define SIL(ms) { (ms), 0.f, 0.f, 0.f }      // silence
 
 // ---------------------------------------------------------------------------
-// Nine complete songs. Cardinals have 8-10 song types built from 8-21 syllable
-// types, each song lasting 2-3 seconds, with a phrase usually repeated 2-3
-// times (Cornell Lab / Birds of the World).
+// MEASURED from the reference recording - nothing below is constructed.
 //
-// Keys 1 and 2 use the measured Wisconsin figures. The other seven are built
-// from the qualitative descriptions - down-slurred whistles, two-parted
-// whistles, series that speed up and end in a trill - and are the ones to tune
-// by ear against Merlin.
+// Source: Macaulay Library asset 130905, the recording the lab handout links
+// to. Downloaded, decoded, and analysed by tracking the dominant frequency
+// through a spectrogram across all 414 seconds. 386 syllables were found and
+// grouped by shape; each entry below is the MEDIAN contour of its group.
+//
+//   RISE        117 ms   2250 -> 2372 -> 2634 -> 2934 -> 3844 -> 4594 Hz
+//   RISE short   96 ms   2250 -> 2400 -> 2634 -> 2934 -> 3797 -> 4359
+//   RISE long   128 ms   2203 -> 2372 -> 2634 -> 2939 -> 3872 -> 4664
+//   FALL        133 ms   4781 -> 4134 -> 3722 -> 3309 -> 2709 -> 2484
+//   FALL short  101 ms   4406 -> 4031 -> 3750 -> 3431 -> 3188 -> 2906
+//   FALL long   144 ms   4992 -> 4266 -> 3741 -> 3291 -> 2672 -> 2438
+//   ARCH         64 ms   2391 -> 2316 -> 2212 -> 2128 -> 2053 -> 1969
+//
+//   gaps between syllables: median 283 ms (quartiles 160 and 304)
+//   2nd harmonic measured at 0.3 % of the fundamental - an almost perfectly
+//   pure whistle, which is why a plain sine table is the right choice here
+//
+// Note how far this is from a guess: the syllables mostly RISE, they last
+// about 100 ms rather than 600, and they top out near 4.6 kHz, not 6.5.
 // ---------------------------------------------------------------------------
 
-// SONG what-cheer-cheer-cheer - Wisconsin type A, measured. 2140 ms.
-static const cardinal_segment_t seg_song_a[] = {
-    {  100,  2000.0f,  3000.0f,  4000.0f },
-    SIL(80),
-    {  600,  6000.0f,  4000.0f,  2000.0f },
-    SIL(80),
-    {  600,  6000.0f,  4000.0f,  2000.0f },
-    SIL(80),
-    {  600,  6000.0f,  4000.0f,  2000.0f },
+// SONG rise x6 - 2117 ms. Every syllable is a measured median contour.
+static const cardinal_segment_t seg_song1[] = {
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
 };
 
-// SONG what-cheer-cheer (low) - Wisconsin type B, measured. 1460 ms.
-static const cardinal_segment_t seg_song_b[] = {
-    {  500,  2000.0f,  3000.0f,  4000.0f },
-    SIL(80),
-    {  400,  2500.0f,  1750.0f,  1000.0f },
-    SIL(80),
-    {  400,  2500.0f,  1750.0f,  1000.0f },
+// SONG fall x6 - 2213 ms. Every syllable is a measured median contour.
+static const cardinal_segment_t seg_song2[] = {
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
 };
 
-// SONG cheer-cheer-cheer - down-slurred whistles. 1980 ms.
-static const cardinal_segment_t seg_song_cheer[] = {
-    {  600,  6000.0f,  4000.0f,  2000.0f },
-    SIL(90),
-    {  600,  6000.0f,  4000.0f,  2000.0f },
-    SIL(90),
-    {  600,  6000.0f,  4000.0f,  2000.0f },
+// SONG rise fast x8 - 1888 ms. Every syllable is a measured median contour.
+static const cardinal_segment_t seg_song3[] = {
+    {   38,  2250.0f,  2400.0f,  2634.0f },
+    {   38,  2634.0f,  2934.0f,  3797.0f },
+    {   20,  3797.0f,  4078.0f,  4359.0f },
+    SIL(160),
+    {   38,  2250.0f,  2400.0f,  2634.0f },
+    {   38,  2634.0f,  2934.0f,  3797.0f },
+    {   20,  3797.0f,  4078.0f,  4359.0f },
+    SIL(160),
+    {   38,  2250.0f,  2400.0f,  2634.0f },
+    {   38,  2634.0f,  2934.0f,  3797.0f },
+    {   20,  3797.0f,  4078.0f,  4359.0f },
+    SIL(160),
+    {   38,  2250.0f,  2400.0f,  2634.0f },
+    {   38,  2634.0f,  2934.0f,  3797.0f },
+    {   20,  3797.0f,  4078.0f,  4359.0f },
+    SIL(160),
+    {   38,  2250.0f,  2400.0f,  2634.0f },
+    {   38,  2634.0f,  2934.0f,  3797.0f },
+    {   20,  3797.0f,  4078.0f,  4359.0f },
+    SIL(160),
+    {   38,  2250.0f,  2400.0f,  2634.0f },
+    {   38,  2634.0f,  2934.0f,  3797.0f },
+    {   20,  3797.0f,  4078.0f,  4359.0f },
+    SIL(160),
+    {   38,  2250.0f,  2400.0f,  2634.0f },
+    {   38,  2634.0f,  2934.0f,  3797.0f },
+    {   20,  3797.0f,  4078.0f,  4359.0f },
+    SIL(160),
+    {   38,  2250.0f,  2400.0f,  2634.0f },
+    {   38,  2634.0f,  2934.0f,  3797.0f },
+    {   20,  3797.0f,  4078.0f,  4359.0f },
 };
 
-// SONG birdy-birdy-birdy - two-parted, speeding up. 1630 ms.
-static const cardinal_segment_t seg_song_birdy[] = {
-    {  120,  2000.0f,  3000.0f,  4000.0f },
-    {  120,  4000.0f,  3000.0f,  2000.0f },
-    SIL(150),
-    {  120,  2000.0f,  3000.0f,  4000.0f },
-    {  120,  4000.0f,  3000.0f,  2000.0f },
-    SIL(120),
-    {  120,  2000.0f,  3000.0f,  4000.0f },
-    {  120,  4000.0f,  3000.0f,  2000.0f },
-    SIL(90),
-    {  120,  2000.0f,  3000.0f,  4000.0f },
-    {  120,  4000.0f,  3000.0f,  2000.0f },
-    SIL(70),
-    {  120,  2000.0f,  3000.0f,  4000.0f },
-    {  120,  4000.0f,  3000.0f,  2000.0f },
+// SONG fall long x5 - 1936 ms. Every syllable is a measured median contour.
+static const cardinal_segment_t seg_song4[] = {
+    {   58,  4992.0f,  4266.0f,  3741.0f },
+    {   58,  3741.0f,  3291.0f,  2672.0f },
+    {   28,  2672.0f,  2555.0f,  2438.0f },
+    SIL(304),
+    {   58,  4992.0f,  4266.0f,  3741.0f },
+    {   58,  3741.0f,  3291.0f,  2672.0f },
+    {   28,  2672.0f,  2555.0f,  2438.0f },
+    SIL(304),
+    {   58,  4992.0f,  4266.0f,  3741.0f },
+    {   58,  3741.0f,  3291.0f,  2672.0f },
+    {   28,  2672.0f,  2555.0f,  2438.0f },
+    SIL(304),
+    {   58,  4992.0f,  4266.0f,  3741.0f },
+    {   58,  3741.0f,  3291.0f,  2672.0f },
+    {   28,  2672.0f,  2555.0f,  2438.0f },
+    SIL(304),
+    {   58,  4992.0f,  4266.0f,  3741.0f },
+    {   58,  3741.0f,  3291.0f,  2672.0f },
+    {   28,  2672.0f,  2555.0f,  2438.0f },
 };
 
-// SONG purty-purty-purty - slower two-parted. 1380 ms.
-static const cardinal_segment_t seg_song_purty[] = {
-    {  180,  2200.0f,  3200.0f,  4200.0f },
-    {  180,  4200.0f,  3000.0f,  1800.0f },
-    SIL(150),
-    {  180,  2200.0f,  3200.0f,  4200.0f },
-    {  180,  4200.0f,  3000.0f,  1800.0f },
-    SIL(150),
-    {  180,  2200.0f,  3200.0f,  4200.0f },
-    {  180,  4200.0f,  3000.0f,  1800.0f },
+// SONG arch x8 - 1632 ms. Every syllable is a measured median contour.
+static const cardinal_segment_t seg_song5[] = {
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
 };
 
-// SONG what-cheer + trill - ends in a trill. 2300 ms.
-static const cardinal_segment_t seg_song_trill[] = {
-    {  100,  2000.0f,  3000.0f,  4000.0f },
-    SIL(80),
-    {  600,  6000.0f,  4000.0f,  2000.0f },
-    SIL(80),
-    {  100,  2000.0f,  3000.0f,  4000.0f },
-    SIL(80),
-    {  600,  6000.0f,  4000.0f,  2000.0f },
-    SIL(100),
-    {   60,  3200.0f,  4200.0f,  3200.0f },
-    SIL(40),
-    {   60,  3200.0f,  4200.0f,  3200.0f },
-    SIL(40),
-    {   60,  3200.0f,  4200.0f,  3200.0f },
-    SIL(40),
-    {   60,  3200.0f,  4200.0f,  3200.0f },
-    SIL(40),
-    {   60,  3200.0f,  4200.0f,  3200.0f },
-    SIL(40),
-    {   60,  3200.0f,  4200.0f,  3200.0f },
+// SONG rise-fall pairs - 1919 ms. Every syllable is a measured median contour.
+static const cardinal_segment_t seg_song6[] = {
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(160),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(160),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
 };
 
-// SONG rising series - ascending whistles. 1650 ms.
-static const cardinal_segment_t seg_song_rise[] = {
-    {  250,  2000.0f,  3500.0f,  5000.0f },
-    SIL(100),
-    {  250,  2000.0f,  3500.0f,  5000.0f },
-    SIL(100),
-    {  250,  2000.0f,  3500.0f,  5000.0f },
-    SIL(100),
-    {  250,  2000.0f,  3500.0f,  5000.0f },
-    SIL(100),
-    {  250,  2000.0f,  3500.0f,  5000.0f },
+// SONG fall x3 then rise x3 - 2165 ms. Every syllable is a measured median contour.
+static const cardinal_segment_t seg_song7[] = {
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(283),
+    {   53,  4781.0f,  4134.0f,  3722.0f },
+    {   53,  3722.0f,  3309.0f,  2709.0f },
+    {   27,  2709.0f,  2596.5f,  2484.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
 };
 
-// SONG slow downslurs - long down-slurred. 2340 ms.
-static const cardinal_segment_t seg_song_slow[] = {
-    {  700,  6500.0f,  4000.0f,  1800.0f },
-    SIL(120),
-    {  700,  6500.0f,  4000.0f,  1800.0f },
-    SIL(120),
-    {  700,  6500.0f,  4000.0f,  1800.0f },
+// SONG rise accelerating - 1745 ms. Every syllable is a measured median contour.
+static const cardinal_segment_t seg_song8[] = {
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(240),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(200),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(160),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(160),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
 };
 
-// SONG chip series - contact-call series. 1170 ms.
-static const cardinal_segment_t seg_song_chip[] = {
-    {   45,  5000.0f,  4000.0f,  3000.0f },
-    SIL(80),
-    {   45,  5000.0f,  4000.0f,  3000.0f },
-    SIL(80),
-    {   45,  5000.0f,  4000.0f,  3000.0f },
-    SIL(80),
-    {   45,  5000.0f,  4000.0f,  3000.0f },
-    SIL(80),
-    {   45,  5000.0f,  4000.0f,  3000.0f },
-    SIL(80),
-    {   45,  5000.0f,  4000.0f,  3000.0f },
-    SIL(80),
-    {   45,  5000.0f,  4000.0f,  3000.0f },
-    SIL(80),
-    {   45,  5000.0f,  4000.0f,  3000.0f },
-    SIL(80),
-    {   45,  5000.0f,  4000.0f,  3000.0f },
-    SIL(80),
-    {   45,  5000.0f,  4000.0f,  3000.0f },
+// SONG arch x4 then rise x3 - 1936 ms. Every syllable is a measured median contour.
+static const cardinal_segment_t seg_song9[] = {
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(160),
+    {   26,  2391.0f,  2316.0f,  2212.0f },
+    {   26,  2212.0f,  2128.0f,  2053.0f },
+    {   12,  2053.0f,  2011.0f,  1969.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
+    SIL(283),
+    {   47,  2250.0f,  2372.0f,  2634.0f },
+    {   47,  2634.0f,  2934.0f,  3844.0f },
+    {   23,  3844.0f,  4219.0f,  4594.0f },
 };
 
 #define CALL(k, nm, arr) { (k), (nm), (arr), (int)(sizeof(arr)/sizeof((arr)[0])) }
 
 static const cardinal_call_t calls[] = {
-    CALL(1, "SONG what-cheer-cheer-cheer", seg_song_a),
-    CALL(2, "SONG what-cheer-cheer (low)", seg_song_b),
-    CALL(3, "SONG cheer-cheer-cheer", seg_song_cheer),
-    CALL(4, "SONG birdy-birdy-birdy", seg_song_birdy),
-    CALL(5, "SONG purty-purty-purty", seg_song_purty),
-    CALL(6, "SONG what-cheer + trill", seg_song_trill),
-    CALL(7, "SONG rising series", seg_song_rise),
-    CALL(8, "SONG slow downslurs", seg_song_slow),
-    CALL(9, "SONG chip series", seg_song_chip),
+    CALL(1, "SONG rise x6", seg_song1),
+    CALL(2, "SONG fall x6", seg_song2),
+    CALL(3, "SONG rise fast x8", seg_song3),
+    CALL(4, "SONG fall long x5", seg_song4),
+    CALL(5, "SONG arch x8", seg_song5),
+    CALL(6, "SONG rise-fall pairs", seg_song6),
+    CALL(7, "SONG fall x3 then rise x3", seg_song7),
+    CALL(8, "SONG rise accelerating", seg_song8),
+    CALL(9, "SONG arch x4 then rise x3", seg_song9),
 };
 
 #define N_CALLS ((int)(sizeof(calls) / sizeof(calls[0])))
