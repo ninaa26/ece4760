@@ -245,6 +245,7 @@ static PT_THREAD (protothread_playback(struct pt *pt))
     static int sample;
     static int play_key;
     static unsigned int playback_adc;
+    static uint64_t play_t0;      // when this recording started, in us
 
     while(1) {
 
@@ -253,6 +254,11 @@ static PT_THREAD (protothread_playback(struct pt *pt))
             // Latch the key now: record_key can change under us if another key
             // is pressed while this recording is still playing.
             play_key = record_key;
+
+            // Timebase for the whole recording. Every sample is scheduled
+            // against THIS instant, not against the previous sample, so the
+            // scheduler's overhead cannot accumulate.
+            play_t0 = time_us_64();
 
             for (sample = 0;
                  playing && sample < record_length[play_key];
@@ -277,11 +283,21 @@ static PT_THREAD (protothread_playback(struct pt *pt))
                     phase_incr_main = adc_to_phase_incr(playback_adc);
                 }
 
-                // This wait IS the playback speed. Every sample is still read;
-                // we simply do not dawdle between them. Recording captures one
-                // sample per 10000 us, so 1000 us replays it at 10x.
-                PT_YIELD_usec(1000);
+                // Wait until sample N is DUE, measured from the start of the
+                // recording. PT_YIELD_usec(1000) would instead wait "at least
+                // 1000 us from now", so the ISR's share of the CPU and the
+                // other threads would be added on at every step and the song
+                // would stretch by a few percent - every syllable and every
+                // gap alike. Spacing and timing are most of what a bird-ID
+                // model keys on, so the drift has to go somewhere it cannot
+                // build up.
+                PT_YIELD_UNTIL(pt,
+                    time_us_64() >= play_t0 + (uint64_t)(sample + 1) * 1000ull) ;
             }
+
+            printf("played key %d: %d samples in %llu ms\n",
+                   play_key, sample,
+                   (unsigned long long)((time_us_64() - play_t0) / 1000)) ;
 
             playing = false;
 
@@ -299,7 +315,12 @@ static PT_THREAD (protothread_playback(struct pt *pt))
 
                 if (seq_index < sequence_length) {
                     record_key = sequence[seq_index] ;
-                    PT_YIELD_usec(NOTE_GAP_US) ;   // a breath between notes
+                    // Scheduled against the end of the note that just
+                    // finished, for the same reason as the samples above.
+                    PT_YIELD_UNTIL(pt,
+                        time_us_64() >= play_t0
+                                      + (uint64_t)sample * 1000ull
+                                      + (uint64_t)NOTE_GAP_US) ;
                     playing = true ;
                 } else {
                     playing_sequence = false ;     // phrase finished
