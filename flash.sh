@@ -51,8 +51,13 @@ if [[ -d "$DRIVE" ]]; then
 else
   echo
   echo "FLASHED. The drive ejected itself, which means the board is running it."
-  echo "  keys 1-6  single syllables"
-  echo "  key 7     SONG  what-cheer-cheer-cheer   2.1 s"
-  echo "  key 8     SONG  what-cheer-cheer         1.5 s"
-  echo "  key 9     SONG  birdy-birdy-birdy        1.3 s"
+  echo "  1  what-cheer-cheer-cheer   2.1 s   <- measured figures"
+  echo "  2  what-cheer-cheer (low)    1.5 s   <- measured figures"
+  echo "  3  cheer-cheer-cheer         2.0 s"
+  echo "  4  birdy-birdy-birdy         1.6 s"
+  echo "  5  purty-purty-purty         1.4 s"
+  echo "  6  what-cheer + trill        2.3 s"
+  echo "  7  rising series             1.7 s"
+  echo "  8  slow downslurs            2.3 s"
+  echo "  9  chip series               1.2 s"
 fi
