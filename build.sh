@@ -11,6 +11,15 @@ export PICO_TOOLCHAIN_PATH="$HOME/.pico-sdk/toolchain/14_2_Rel1"
 export PATH="$PICO_TOOLCHAIN_PATH/bin:/opt/homebrew/bin:$PATH"
 
 BOARD="${PICO_BOARD:-pico2}"          # PICO_BOARD=pico ./build.sh ... for a Pico 1
+
+# DEBUG=1 ./build.sh <project>  -> unoptimised build with symbols, for use with a debug probe.
+# Kept in its own build directory so it never collides with the normal build.
+CMAKE_ARGS=()
+SUFFIX=""
+if [[ "${DEBUG:-0}" == "1" ]]; then
+  CMAKE_ARGS+=(-DCMAKE_BUILD_TYPE=Debug)
+  SUFFIX="-debug"
+fi
 REPO="$HOME/Developer/ECE4760/Hunter-Adams-RP2040-Demos"
 
 if [[ -z "$1" ]]; then
@@ -31,13 +40,17 @@ fi
 # Each project needs the SDK's import shim next to its CMakeLists.txt
 [[ -f "$SRC/pico_sdk_import.cmake" ]] || cp "$PICO_SDK_PATH/external/pico_sdk_import.cmake" "$SRC/"
 
-BUILD="$HOME/Developer/ECE4760/build/${SRC:t}-$BOARD"
+BUILD="$HOME/Developer/ECE4760/build/${SRC:t}-$BOARD$SUFFIX"
 
-cmake -S "$SRC" -B "$BUILD" -G Ninja -DPICO_BOARD="$BOARD" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON >/dev/null
+cmake -S "$SRC" -B "$BUILD" -G Ninja -DPICO_BOARD="$BOARD" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "${CMAKE_ARGS[@]}" >/dev/null
 cmake --build "$BUILD"
 
 echo
 echo "board:  $BOARD"
+[[ -n "$SUFFIX" ]] && echo "build:  Debug (symbols, unoptimised)"
+for f in "$BUILD"/*.elf; do
+  echo "elf:    $f"
+done
 for f in "$BUILD"/*.uf2; do
   echo "uf2:    $f"
 done
