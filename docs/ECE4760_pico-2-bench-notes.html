@@ -1,0 +1,722 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Pico 2 Bench Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root{
+  --paper:#F4F5F2; --surface:#FFFFFF; --surface-2:#EAEDE7;
+  --ink:#15181A; --ink-2:#4B5256; --ink-3:#7C8583;
+  --rule:#DADED6; --rule-2:#C3C9BF;
+  --accent:#1B4FBF; --accent-soft:#E4EAFA; --accent-line:#B9C9EE;
+  --flag:#9E4A16; --flag-soft:#F7EADF; --flag-line:#E2C4A9;
+  --code-bg:#EDEFEA; --code-ink:#22282A;
+  --shadow:0 1px 2px rgba(21,24,26,.05), 0 8px 24px -18px rgba(21,24,26,.35);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1214; --surface:#171B1D; --surface-2:#1E2326;
+    --ink:#E7EAE7; --ink-2:#A6AFAC; --ink-3:#79837F;
+    --rule:#282E31; --rule-2:#39413F;
+    --accent:#8FB1FF; --accent-soft:#18233A; --accent-line:#2C3D63;
+    --flag:#E3A470; --flag-soft:#2C231A; --flag-line:#4A3B2B;
+    --code-bg:#1C2124; --code-ink:#D7DCD9;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1214; --surface:#171B1D; --surface-2:#1E2326;
+  --ink:#E7EAE7; --ink-2:#A6AFAC; --ink-3:#79837F;
+  --rule:#282E31; --rule-2:#39413F;
+  --accent:#8FB1FF; --accent-soft:#18233A; --accent-line:#2C3D63;
+  --flag:#E3A470; --flag-soft:#2C231A; --flag-line:#4A3B2B;
+  --code-bg:#1C2124; --code-ink:#D7DCD9;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Serif", Georgia, "Times New Roman", serif;
+  font-size:16.5px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px; margin:0 auto; padding:0 24px 96px}
+
+/* ---------- masthead ---------- */
+header.mast{
+  border-bottom:1px solid var(--rule);
+  padding:44px 0 26px; margin-bottom:34px;
+}
+.eyebrow{
+  font-family:"IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  font-weight:600; font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3);
+}
+h1{
+  font-family:"IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  font-weight:700; font-size:clamp(34px,5.2vw,54px); line-height:1.04;
+  letter-spacing:-.015em; margin:10px 0 12px; text-wrap:balance;
+}
+.standfirst{font-size:18px; color:var(--ink-2); max-width:62ch; margin:0}
+.mast-meta{
+  display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:20px;
+}
+.tag{
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11.5px;
+  padding:4px 9px; border:1px solid var(--rule-2); border-radius:2px;
+  color:var(--ink-2); background:var(--surface);
+}
+
+/* ---------- layout ---------- */
+.cols{display:block}
+@media (min-width:1000px){
+  .cols{display:grid; grid-template-columns:212px minmax(0,1fr); gap:56px; align-items:start}
+  nav.toc{position:sticky; top:22px; max-height:calc(100vh - 44px); overflow-y:auto}
+}
+nav.toc{
+  font-family:"IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  font-size:14px; line-height:1.35;
+  border-top:2px solid var(--ink); padding-top:12px; margin-bottom:40px;
+}
+nav.toc .toc-h{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); font-weight:600; margin-bottom:10px}
+nav.toc ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px}
+nav.toc a{
+  color:var(--ink-2); text-decoration:none; display:grid;
+  grid-template-columns:26px 1fr; gap:6px; border-left:2px solid transparent; padding-left:6px;
+}
+nav.toc a:hover{color:var(--accent); border-left-color:var(--accent)}
+nav.toc a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+nav.toc .n{font-family:"IBM Plex Mono", monospace; font-size:11px; color:var(--ink-3); padding-top:2px}
+
+main{min-width:0}
+
+/* ---------- sections ---------- */
+section{margin:0 0 56px; scroll-margin-top:20px}
+.sec-head{border-top:1px solid var(--rule); padding-top:14px; margin-bottom:18px}
+.sec-num{
+  font-family:"IBM Plex Mono", monospace; font-size:11.5px; color:var(--accent);
+  letter-spacing:.08em;
+}
+h2{
+  font-family:"IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  font-weight:700; font-size:clamp(24px,3vw,31px); line-height:1.12;
+  letter-spacing:-.01em; margin:6px 0 0; text-wrap:balance;
+}
+h3{
+  font-family:"IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  font-weight:600; font-size:18px; letter-spacing:.01em;
+  margin:30px 0 8px; color:var(--ink);
+}
+h4{
+  font-family:"IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  font-weight:600; font-size:12.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-3); margin:22px 0 6px;
+}
+p{max-width:68ch; margin:0 0 14px}
+ul,ol{max-width:68ch; margin:0 0 14px; padding-left:22px; display:flex; flex-direction:column; gap:7px}
+li::marker{color:var(--ink-3)}
+strong{font-weight:600}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+/* ---------- raw lecture note ---------- */
+.raw{
+  background:var(--surface-2); border-left:3px solid var(--accent);
+  padding:11px 15px; margin:0 0 20px; border-radius:0 3px 3px 0; max-width:68ch;
+}
+.raw .lbl{
+  font-family:"IBM Plex Sans Condensed", sans-serif; font-size:10.5px; font-weight:600;
+  letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:4px;
+}
+.raw p{
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:13px; line-height:1.5;
+  color:var(--ink-2); margin:0; white-space:pre-wrap;
+}
+
+/* ---------- callouts ---------- */
+.note, .gap{
+  border:1px solid var(--accent-line); background:var(--accent-soft);
+  border-radius:3px; padding:14px 16px; margin:18px 0; max-width:68ch;
+}
+.gap{border-color:var(--flag-line); background:var(--flag-soft)}
+.note .lbl, .gap .lbl{
+  font-family:"IBM Plex Sans Condensed", sans-serif; font-size:10.5px; font-weight:700;
+  letter-spacing:.13em; text-transform:uppercase; color:var(--accent); display:block; margin-bottom:5px;
+}
+.gap .lbl{color:var(--flag)}
+.note p:last-child, .gap p:last-child{margin-bottom:0}
+
+/* ---------- code ---------- */
+code{
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.86em;
+  background:var(--code-bg); color:var(--code-ink);
+  padding:1px 5px; border-radius:2px;
+}
+pre{
+  background:var(--code-bg); color:var(--code-ink); border:1px solid var(--rule);
+  border-radius:3px; padding:14px 16px; overflow-x:auto; margin:0 0 16px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:13px; line-height:1.6;
+}
+pre code{background:none; padding:0; font-size:inherit}
+pre .c{color:var(--ink-3)}
+
+/* ---------- tables ---------- */
+.tbl-wrap{overflow-x:auto; margin:0 0 18px; border:1px solid var(--rule); border-radius:3px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:13.5px;
+  font-family:"IBM Plex Sans Condensed", system-ui, sans-serif; font-variant-numeric:tabular-nums}
+th{
+  text-align:left; font-weight:600; font-size:11px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); padding:9px 12px; border-bottom:1px solid var(--rule-2); white-space:nowrap;
+}
+td{padding:8px 12px; border-bottom:1px solid var(--rule); vertical-align:top; color:var(--ink-2)}
+tr:last-child td{border-bottom:none}
+td.mono, th.mono{font-family:"IBM Plex Mono", monospace; font-size:12.5px; color:var(--ink)}
+td.hl{color:var(--accent); font-weight:600}
+
+/* ---------- bit field diagram ---------- */
+.bits{overflow-x:auto; margin:6px 0 8px}
+.bits-row{display:flex; min-width:640px; border:1px solid var(--rule-2); border-radius:3px; overflow:hidden}
+.bit{
+  flex:1 1 0; text-align:center; padding:8px 2px; border-right:1px solid var(--rule);
+  font-family:"IBM Plex Mono", monospace; font-size:12px; background:var(--surface);
+}
+.bit:last-child{border-right:none}
+.bit .bn{display:block; font-size:9.5px; color:var(--ink-3); margin-bottom:3px}
+.bit.cfg{background:var(--accent-soft); color:var(--accent); font-weight:600}
+.bit.data{background:var(--surface-2); color:var(--ink-2)}
+.bits-key{display:flex; flex-wrap:wrap; gap:6px 18px; font-size:13px; color:var(--ink-2); max-width:68ch; margin-bottom:16px}
+.bits-key span{font-family:"IBM Plex Sans Condensed", sans-serif}
+.bits-key b{font-family:"IBM Plex Mono", monospace; color:var(--ink); font-weight:600}
+
+/* ---------- abstraction ladder ---------- */
+.ladder{list-style:none; padding:0; margin:14px 0 18px; max-width:68ch; display:flex; flex-direction:column; gap:0}
+.ladder li{
+  display:grid; grid-template-columns:30px 1fr; gap:14px; padding:12px 0;
+  border-bottom:1px dashed var(--rule-2);
+}
+.ladder li:last-child{border-bottom:none}
+.ladder .step{
+  font-family:"IBM Plex Mono", monospace; font-size:11px; color:var(--ink-3);
+  border:1px solid var(--rule-2); border-radius:50%; width:26px; height:26px;
+  display:grid; place-items:center; margin-top:2px;
+}
+.ladder .what{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink); display:block}
+.ladder .why{font-size:14.5px; color:var(--ink-2); display:block; margin-top:3px}
+
+/* ---------- glossary ---------- */
+.gloss{display:grid; gap:0; margin:0; max-width:68ch}
+.gloss div{display:grid; grid-template-columns:112px 1fr; gap:16px; padding:9px 0; border-bottom:1px solid var(--rule)}
+.gloss div:last-child{border-bottom:none}
+.gloss dt{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink); font-weight:500}
+.gloss dd{margin:0; font-size:15px; color:var(--ink-2)}
+
+footer{border-top:1px solid var(--rule); margin-top:56px; padding-top:18px;
+  font-family:"IBM Plex Sans Condensed", sans-serif; font-size:13px; color:var(--ink-3); max-width:68ch}
+footer a{color:var(--ink-2)}
+@media (max-width:520px){
+  .gloss div{grid-template-columns:1fr; gap:2px}
+}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">ECE 4760 / 5730 &middot; Digital Systems Design Using Microcontrollers &middot; Cornell</div>
+  <h1>Pico 2 Bench Notes</h1>
+  <p class="standfirst">Lecture shorthand from Hunter Adams' class, filled in: how a Pico 2 program actually starts, how to dig through the SDK when you hit code you don't recognize, and everything Lab 1 needs from SPI, timer interrupts and the DAC.</p>
+  <div class="mast-meta">
+    <span class="tag">RP2350 &middot; Pico 2</span>
+    <span class="tag">Pico C/C++ SDK</span>
+    <span class="tag">Lab 1 &middot; Synthesizing Birdsong</span>
+  </div>
+</header>
+
+<div class="cols">
+
+<nav class="toc" aria-label="Contents">
+  <div class="toc-h">Contents</div>
+  <ol>
+    <li><a href="#setup"><span class="n">00</span><span>Project setup</span></a></li>
+    <li><a href="#start"><span class="n">01</span><span>Where code starts</span></a></li>
+    <li><a href="#dig"><span class="n">02</span><span>Digging into unknown code</span></a></li>
+    <li><a href="#funcsel"><span class="n">03</span><span>GPIO function table</span></a></li>
+    <li><a href="#io"><span class="n">04</span><span>Inputs, outputs, impedance</span></a></li>
+    <li><a href="#sio"><span class="n">05</span><span>SIO and registers</span></a></li>
+    <li><a href="#debug"><span class="n">06</span><span>Run mode vs debug mode</span></a></li>
+    <li><a href="#lab1"><span class="n">07</span><span>Lab 1: SPI + DDS</span></a></li>
+    <li><a href="#dac"><span class="n">08</span><span>The MCP4822 DAC</span></a></li>
+    <li><a href="#dds"><span class="n">09</span><span>Timer IRQ and DDS</span></a></li>
+    <li><a href="#gloss"><span class="n">10</span><span>Acronyms</span></a></li>
+    <li><a href="#todo"><span class="n">11</span><span>To confirm</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ================= 00 ================= -->
+<section id="setup">
+  <div class="sec-head"><div class="sec-num">00 &mdash; SETUP</div><h2>Getting the project to build</h2></div>
+
+  <div class="raw"><span class="lbl">Raw note</span><p>Set no for the second question thing
+For everywhere that says led pin switch to 25</p></div>
+
+  <h3>Why the LED pin becomes 25</h3>
+  <p>Demo code usually writes <code>PICO_DEFAULT_LED_PIN</code> instead of a number, so the same source builds for any board. That macro only resolves to a real GPIO if the board definition has one. On a plain <strong>Pico 2</strong> the onboard LED sits on <strong>GPIO 25</strong>, so hard-coding <code>25</code> is exactly equivalent and removes the dependency on the board header being picked up correctly.</p>
+  <p>The reason the macro is fragile: on the wireless boards (Pico W, Pico 2 W) the LED isn't wired to an RP2350 pin at all &mdash; it hangs off a GPIO on the CYW43 wireless chip, and you have to drive it through the wireless driver. So "just use 25" is the safe move for the non-W board on your bench, but it is a board-specific number, not a universal one.</p>
+
+<pre><code><span class="c">// the portable version, which may not resolve</span>
+#define LED_PIN PICO_DEFAULT_LED_PIN
+
+<span class="c">// what we're doing instead</span>
+#define LED_PIN 25
+
+gpio_init(LED_PIN);
+gpio_set_dir(LED_PIN, GPIO_OUT);
+gpio_put(LED_PIN, 1);</code></pre>
+
+  <div class="gap"><span class="lbl">Fill this in</span><p>"Set no for the second question" &mdash; the note doesn't say which dialog. The two likely candidates in the Raspberry Pi Pico VS&nbsp;Code extension's <em>New / Import Project</em> panel are the <strong>RISC-V</strong> toggle (the RP2350 has both Arm Cortex-M33 cores and Hazard3 RISC-V cores; the course uses Arm, so RISC-V stays off) and the <strong>"generate example / C++ code"</strong> style checkboxes. Check your screenshot of the wizard and write the real one in here &mdash; picking RISC-V by mistake gives you a toolchain error that looks nothing like a wrong-answer error.</p></div>
+</section>
+
+<!-- ================= 01 ================= -->
+<section id="start">
+  <div class="sec-head"><div class="sec-num">01 &mdash; ENTRY POINT</div><h2>Where the code starts executing</h2></div>
+
+  <div class="raw"><span class="lbl">Raw note</span><p>Code starts executing is first line of main
+It is initializing gpio</p></div>
+
+  <p>For your purposes, execution begins at the <strong>first line of <code>main()</code></strong>. That is where you set breakpoints, and that is the first line you own.</p>
+  <p>Strictly, a fair amount has already happened before <code>main()</code> is reached, and it's worth knowing because it explains what the debugger shows you if you halt too early:</p>
+  <ol>
+    <li>The <strong>bootrom</strong> (mask ROM baked into the RP2350) runs, checks for BOOTSEL, and validates the image in flash.</li>
+    <li>A small <strong>second-stage bootloader</strong> configures the QSPI flash interface so the chip can execute code directly out of flash (XIP &mdash; execute in place).</li>
+    <li><strong>C runtime startup</strong> copies initialised data into RAM, zeroes the <code>.bss</code> section, and sets up the stack and vector table.</li>
+    <li>SDK runtime init brings up clocks and enabled peripherals.</li>
+    <li><code>main()</code> is called.</li>
+  </ol>
+
+  <h3>What those first lines of main are doing</h3>
+  <p>The opening lines are almost always <strong>initialising GPIO</strong> &mdash; claiming pins and deciding what each one is for. Nothing on the chip is usable until you say who owns it.</p>
+<pre><code>int main() {
+    stdio_init_all();            <span class="c">// USB/UART serial for printf</span>
+    gpio_init(LED_PIN);          <span class="c">// pin -&gt; SIO function, output disabled</span>
+    gpio_set_dir(LED_PIN, GPIO_OUT);  <span class="c">// now make it an output</span>
+    while (true) {
+        gpio_put(LED_PIN, 1);
+        sleep_ms(250);
+        gpio_put(LED_PIN, 0);
+        sleep_ms(250);
+    }
+}</code></pre>
+  <p><code>gpio_init()</code> is doing two separate things: it routes the pin to the <strong>SIO</strong> function (software control &mdash; see &sect;05) and it puts the pin in a known, safe state. It does <em>not</em> make the pin an output. That takes a second call.</p>
+</section>
+
+<!-- ================= 02 ================= -->
+<section id="dig">
+  <div class="sec-head"><div class="sec-num">02 &mdash; METHOD</div><h2>Investigating code you don't recognise</h2></div>
+
+  <div class="raw"><span class="lbl">Raw note</span><p>Investigate what code u knot know what it does
+Rp2350 hardware api guide - describes all functions
+hardware gpio section - table that tells u all functions for gpio number
+Scroll down and there is a bunch of functions
+U can select the function and it tells u what it does
+Right click and select definition
+Through functions we are going down through abstractions
+Look at hardware field
+Rp2350 datasheet list of registers</p></div>
+
+  <p>Two complementary moves: <strong>read the API doc</strong> to find out what a function is supposed to do, and <strong>Go to Definition</strong> to find out what it actually does. The second one is the skill worth building, because every SDK call bottoms out at a register write, and once you can see that register write you can debug anything.</p>
+
+  <h3>The documentation route</h3>
+  <ul>
+    <li><strong>Pico SDK Hardware APIs</strong> &mdash; <code>raspberrypi.com/documentation/pico-sdk/hardware.html</code>. Every hardware module is a section: <code>hardware_gpio</code>, <code>hardware_spi</code>, <code>hardware_timer</code>, <code>hardware_adc</code>, <code>hardware_irq</code>.</li>
+    <li>In <strong>hardware_gpio</strong>, the top of the page carries the <strong>function-select table</strong> &mdash; every GPIO number down the side, every peripheral function across the top (&sect;03). Scroll past it and you get the full list of callable functions; click any one for its description, arguments and return value.</li>
+    <li><strong>RP2350 datasheet</strong> &mdash; the register-level reference. When the SDK doc isn't enough, this tells you what each bit in each register means.</li>
+  </ul>
+
+  <h3>The Go-to-Definition route</h3>
+  <p>Right-click any SDK call in VS&nbsp;Code &rarr; <strong>Go to Definition</strong> (F12). Keep doing it. You are walking down the abstraction stack, and each rung strips away one layer of convenience:</p>
+
+  <ol class="ladder">
+    <li><span class="step">1</span><span><span class="what">gpio_put(25, 1)</span><span class="why">The friendly SDK call you write. Named for what you want, not for what the hardware is.</span></span></li>
+    <li><span class="step">2</span><span><span class="what">static inline void gpio_put(...)</span><span class="why">A thin inline wrapper in <code>hardware/gpio.h</code>. It just chooses between the set and clear registers.</span></span></li>
+    <li><span class="step">3</span><span><span class="what">sio_hw-&gt;gpio_set = 1u &lt;&lt; 25</span><span class="why">A write through a <strong>hardware struct</strong>. <code>sio_hw</code> is a C struct laid over a fixed memory address so that struct fields line up with hardware registers. This is the "hardware field" layer.</span></span></li>
+    <li><span class="step">4</span><span><span class="what">#define SIO_BASE 0xd0000000</span><span class="why">The struct's address, defined in the generated register headers along with every offset and bit mask.</span></span></li>
+    <li><span class="step">5</span><span><span class="what">RP2350 datasheet, SIO chapter</span><span class="why">The register list: what <code>GPIO_OUT_SET</code> is, what happens when a bit in it is written, and what the hardware does next.</span></span></li>
+  </ol>
+
+  <div class="note"><span class="lbl">The point</span><p>Nothing in the SDK is magic. A "function" is a name for a memory write. When something misbehaves, you can descend to the register, then look at that exact address in the debugger's memory view and see whether the bit you expected is set.</p></div>
+</section>
+
+<!-- ================= 03 ================= -->
+<section id="funcsel">
+  <div class="sec-head"><div class="sec-num">03 &mdash; PIN MUX</div><h2>The GPIO function-select table</h2></div>
+
+  <div class="raw"><span class="lbl">Raw note</span><p>hardware gpio section
+Table that tells u all functions for gpio nimber
+SPIO GPIO SIO SDK</p></div>
+
+  <p>Each GPIO pin is a multiplexer. The pad is physical; what is connected to it is a choice. Every pin can be attached to exactly <strong>one</strong> function at a time, chosen from a numbered list F0&ndash;F11 on the RP2350, and <strong>not every function is available on every pin</strong>. That constraint is what the table exists to answer, and it is why your DAC has to live on particular pins.</p>
+
+  <h4>The function columns (RP2350, bank 0)</h4>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Fn</th><th>Peripheral</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">F0</td><td class="mono">HSTX</td><td>High-speed serial transmit (GPIO 12&ndash;19 only). New on RP2350.</td></tr>
+      <tr><td class="mono">F1</td><td class="mono">SPI</td><td>Hardware SPI &mdash; RX, CSn, SCK, TX. <strong>What Lab 1 uses for the DAC.</strong></td></tr>
+      <tr><td class="mono">F2</td><td class="mono">UART</td><td>Asynchronous serial &mdash; TX, RX, CTS, RTS.</td></tr>
+      <tr><td class="mono">F3</td><td class="mono">I2C</td><td>Two-wire bus &mdash; SDA, SCL.</td></tr>
+      <tr><td class="mono">F4</td><td class="mono">PWM</td><td>Pulse-width modulation, 12 slices &times; 2 channels (A/B).</td></tr>
+      <tr><td class="mono">F5</td><td class="mono">SIO</td><td>Single-cycle I/O &mdash; plain software-controlled GPIO. <strong>The default after <code>gpio_init()</code>.</strong></td></tr>
+      <tr><td class="mono">F6&ndash;F8</td><td class="mono">PIO0/1/2</td><td>Programmable I/O state machines. RP2350 has three blocks (RP2040 had two).</td></tr>
+      <tr><td class="mono">F9</td><td class="mono">CLOCK / TRACE</td><td>Clock in/out, and SWD trace pins.</td></tr>
+      <tr><td class="mono">F10</td><td class="mono">USB</td><td>VBUS detect / enable / overcurrent detect.</td></tr>
+      <tr><td class="mono">F11</td><td class="mono">UART (alt)</td><td>Second UART mapping on some pins.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>The rows you need for Lab 1</h4>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>GPIO</th><th class="mono">F1 (SPI)</th><th class="mono">F5</th><th>Lab 1 role</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">4</td><td class="mono">SPI0 RX</td><td class="mono">SIO</td><td>MISO &mdash; defined but unused, the DAC never talks back</td></tr>
+      <tr><td class="mono">5</td><td class="mono">SPI0 CSn</td><td class="mono">SIO</td><td class="hl">CS &rarr; DAC chip select</td></tr>
+      <tr><td class="mono">6</td><td class="mono">SPI0 SCK</td><td class="mono">SIO</td><td class="hl">SCK &rarr; DAC clock</td></tr>
+      <tr><td class="mono">7</td><td class="mono">SPI0 TX</td><td class="mono">SIO</td><td class="hl">MOSI &rarr; DAC SDI</td></tr>
+      <tr><td class="mono">25</td><td class="mono">SPI1 CSn</td><td class="mono">SIO</td><td>Onboard LED (used as SIO)</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Notice GPIO&nbsp;25 <em>could</em> be SPI1 chip-select. It isn't, because we selected F5/SIO for it. That is the whole idea of the mux.</p>
+
+  <div class="note"><span class="lbl">Naming trap</span><p>Your note has "SPIO" &mdash; that is <strong>SPI0</strong> (SPI peripheral zero, a digit), not "SPIO". There are two SPI blocks, <code>SPI0</code> and <code>SPI1</code>. Similarly <strong>SIO</strong> is a completely different thing from SPI &mdash; letters transposed, meaning unrelated. See &sect;05.</p></div>
+
+<pre><code><span class="c">// selecting a function = writing the mux</span>
+gpio_set_function(6, GPIO_FUNC_SPI);   <span class="c">// GPIO 6 becomes SPI0 SCK</span>
+gpio_set_function(7, GPIO_FUNC_SPI);   <span class="c">// GPIO 7 becomes SPI0 TX  (MOSI)</span>
+gpio_set_function(5, GPIO_FUNC_SPI);   <span class="c">// GPIO 5 becomes SPI0 CSn</span></code></pre>
+  <p>Handing CS to the SPI peripheral means the hardware raises and lowers it around each frame for you. Drive CS yourself with SIO instead if you need one CS assertion to span several frames.</p>
+</section>
+
+<!-- ================= 04 ================= -->
+<section id="io">
+  <div class="sec-head"><div class="sec-num">04 &mdash; ELECTRICAL</div><h2>Inputs, outputs and impedance</h2></div>
+
+  <div class="raw"><span class="lbl">Raw note</span><p>Automatically an output
+Inputs are high impediments
+Outputs are low impedance (can blow it)</p></div>
+
+  <p>"Impediments" is impedance. The distinction matters because it's the one that lets you destroy a pin.</p>
+
+  <h3>Input &mdash; high impedance</h3>
+  <p>A pin configured as an input presents a very large resistance to whatever is connected. It <strong>senses</strong> voltage and draws essentially no current. High impedance is electrically polite: connect an input to anything and nothing bad happens. It also means a floating input has no defined value, which is why you add a pull-up or pull-down when a pin isn't always driven.</p>
+
+  <h3>Output &mdash; low impedance</h3>
+  <p>A pin configured as an output <strong>forces</strong> its voltage to 0&nbsp;V or 3.3&nbsp;V, and it does that by being a low resistance to ground or to the supply. Low impedance means it will source or sink whatever current the circuit demands. If you tie a driven-high output to ground, or short two outputs together where one drives high and the other drives low, current is limited only by the pin's own on-resistance. That is how you cook a pin.</p>
+
+  <div class="gap"><span class="lbl">Correction to the raw note</span><p>The note says "automatically an output". In the Pico SDK it is the other way round, and the SDK header is explicit: <code>gpio_init()</code> selects the SIO function, <strong>clears the output enable (i.e. sets the pin to input)</strong> and clears the output value. You must call <code>gpio_set_dir(pin, GPIO_OUT)</code> to make it an output.</p><p>This default is deliberate and follows directly from the paragraph above: after reset, every pin is high-impedance, so a chip powering up cannot fight whatever is wired to it. Booting into "output" would risk exactly the short described above. Double-check what was actually said in lecture &mdash; it may have been "once you set the direction, it stays an output," or it may have been about a specific peripheral function.</p></div>
+
+  <h4>Practical rules</h4>
+  <ul>
+    <li>Never wire two outputs together.</li>
+    <li>Never drive an output into a supply rail or ground.</li>
+    <li>Set direction <em>before</em> you set a value, if the initial level matters.</li>
+    <li>An input reading garbage that changes when you touch the board is a floating pin &mdash; add a pull.</li>
+  </ul>
+</section>
+
+<!-- ================= 05 ================= -->
+<section id="sio">
+  <div class="sec-head"><div class="sec-num">05 &mdash; SIO</div><h2>SIO, and what a register actually is</h2></div>
+
+  <div class="raw"><span class="lbl">Raw note</span><p>Look at hardware field
+Rp2350 datasheet list of registers
+Go to memory and look at specific memory adress
+SIO</p></div>
+
+  <h3>SIO = Single-cycle I/O</h3>
+  <p><strong>SIO</strong> is the block that gives software direct control of the pins. Its distinguishing feature is where it lives: SIO is attached directly to the processor's own bus port at <code>0xd0000000</code>, not out on the shared peripheral fabric with SPI, UART and the rest. A read or write to a SIO register therefore completes in <strong>one clock cycle</strong>, with no bus arbitration. That is why toggling a pin through SIO is fast enough to time an ISR with an oscilloscope.</p>
+  <p>SIO also holds a few other things that need to be fast: the per-core CPUID, the inter-core FIFOs and spinlocks, the hardware dividers, and the interpolators.</p>
+
+  <h3>Memory-mapped registers</h3>
+  <p>A <strong>register</strong> is a fixed memory address that isn't memory. Writing to it changes hardware state; reading it reports hardware state. Everything you do to a peripheral is a load or a store to one of these addresses. In the SDK they are reached through structs (<code>sio_hw-&gt;...</code>, <code>timer_hw-&gt;...</code>, <code>spi_get_hw(SPI_PORT)-&gt;...</code>) laid over a base address &mdash; that is the "hardware field" your note refers to.</p>
+
+  <h4>Base addresses you'll actually type into the memory viewer (RP2350)</h4>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Block</th><th class="mono">Base</th><th>What it controls</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">SIO</td><td class="mono">0xd0000000</td><td>Software GPIO state, FIFOs, spinlocks, dividers</td></tr>
+      <tr><td class="mono">IO_BANK0</td><td class="mono">0x40028000</td><td>Function select &amp; interrupt config, per pin</td></tr>
+      <tr><td class="mono">PADS_BANK0</td><td class="mono">0x40038000</td><td>Pad electricals: pulls, drive strength, slew, schmitt</td></tr>
+      <tr><td class="mono">TIMER0</td><td class="mono">0x400b0000</td><td>64-bit &micro;s counter and 4 alarms</td></tr>
+      <tr><td class="mono">SPI0</td><td class="mono">0x40080000</td><td>SPI peripheral 0</td></tr>
+      <tr><td class="mono">ADC</td><td class="mono">0x400a0000</td><td>12-bit ADC (potentiometer, week 1)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>SIO GPIO registers, by offset from 0xd0000000</h4>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th class="mono">Offset</th><th>Register</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">0x004</td><td class="mono">GPIO_IN</td><td>Read the live level of every pin</td></tr>
+      <tr><td class="mono">0x010</td><td class="mono">GPIO_OUT</td><td>Read/write the driven level of every pin</td></tr>
+      <tr><td class="mono">0x018</td><td class="mono">GPIO_OUT_SET</td><td>Write a 1 &rarr; that pin goes high. Zeros ignored.</td></tr>
+      <tr><td class="mono">0x020</td><td class="mono">GPIO_OUT_CLR</td><td>Write a 1 &rarr; that pin goes low. Zeros ignored.</td></tr>
+      <tr><td class="mono">0x028</td><td class="mono">GPIO_OUT_XOR</td><td>Write a 1 &rarr; that pin toggles.</td></tr>
+      <tr><td class="mono">0x030</td><td class="mono">GPIO_OE</td><td>Output enable &mdash; 1 = output, 0 = input</td></tr>
+      <tr><td class="mono">0x038 / 0x040 / 0x048</td><td class="mono">GPIO_OE_SET/CLR/XOR</td><td>Same atomic trick for direction</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The SET/CLR/XOR aliases exist so you can change one pin without a read-modify-write on all of them. A read-modify-write can be interrupted halfway through; a single store to <code>GPIO_OUT_SET</code> cannot. So <code>gpio_put(25,1)</code> compiles to one store to <code>0xd0000018</code> with bit 25 set.</p>
+
+<pre><code><span class="c">// these three lines are equivalent</span>
+gpio_put(25, 1);
+sio_hw-&gt;gpio_set = 1u &lt;&lt; 25;
+*(volatile uint32_t *)(0xd0000018) = (1u &lt;&lt; 25);</code></pre>
+
+  <div class="note"><span class="lbl">Using this in the debugger</span><p>Halt the program and open the memory view at <code>0xd0000010</code>. Bit 25 of that word is the LED's driven state; you can watch it flip as you step. Same trick for <code>0xd0000030</code> to confirm the pin really is an output.</p></div>
+</section>
+
+<!-- ================= 06 ================= -->
+<section id="debug">
+  <div class="sec-head"><div class="sec-num">06 &mdash; TOOLING</div><h2>Run mode vs debug mode</h2></div>
+
+  <div class="raw"><span class="lbl">Raw note</span><p>No debug mode it just runs
+Debug mode program goes on and then it halts
+U can set breakpoints
+Go to memory and loook at specific memory adress
+Next</p></div>
+
+  <h3>Without the debugger</h3>
+  <p>You drag a <code>.uf2</code> onto the board (hold BOOTSEL while plugging in, board mounts as a USB drive) and the program simply runs from power-up. You cannot pause it. Your only visibility is what you deliberately emit &mdash; <code>printf</code> over USB serial, an LED, or a GPIO you toggle and watch on the scope.</p>
+
+  <h3>With the debugger</h3>
+  <p>A debug probe connects to the SWD pins and speaks to the chip's debug hardware. VS&nbsp;Code loads the <code>.elf</code> (which carries the symbol and line information the <code>.uf2</code> doesn't), runs to the start of <code>main()</code>, and <strong>halts there</strong>. From that halt you get:</p>
+  <ul>
+    <li><strong>Breakpoints</strong> &mdash; click the gutter to the left of a line number; execution stops when it reaches that line.</li>
+    <li><strong>Step over / into / out</strong> &mdash; one line at a time. "Into" is how you walk into an SDK function and watch the abstraction ladder from &sect;02 in motion.</li>
+    <li><strong>Variables and watch</strong> &mdash; locals in scope at the halt, plus expressions you add yourself.</li>
+    <li><strong>Memory view</strong> &mdash; type a raw address (e.g. <code>0xd0000010</code>) and read the bytes there. This is how you inspect a peripheral register directly.</li>
+    <li><strong>Call stack</strong> &mdash; how you got to this line.</li>
+    <li><strong>Disassembly</strong> &mdash; the actual instructions, when the C isn't telling the truth.</li>
+  </ul>
+
+  <div class="note"><span class="lbl">Timing caveat</span><p>Halting stops the CPU, but it does not stop the world. The 64-bit microsecond timer keeps counting and external hardware keeps going, so anything timing-dependent &mdash; your 50&nbsp;kHz DDS interrupt, the DAC, a signal you're capturing &mdash; will be wrong the instant you break inside it. To measure how long an ISR takes, don't breakpoint it: set a GPIO high on entry, low on exit, and measure the pulse on the scope. Lab 1 asks you to do exactly this.</p></div>
+</section>
+
+<!-- ================= 07 ================= -->
+<section id="lab1">
+  <div class="sec-head"><div class="sec-num">07 &mdash; LAB 1</div><h2>SPI, a timer interrupt, and a DAC</h2></div>
+
+  <div class="raw"><span class="lbl">Raw note</span><p>Lab 1
+Spi and ndi timer
+DAC - (digital to analogue converter)
+We use mcp4822
+Sdi device data sheets gibes u all info how to talk to it</p></div>
+
+  <p>Lab 1 is <strong>Synthesizing Birdsong</strong>: generate a northern cardinal's song convincingly enough that the Merlin Bird ID app might be fooled by it. "ndi timer" is almost certainly <strong>DDS</strong> + timer &mdash; Direct Digital Synthesis driven by a timer interrupt.</p>
+
+  <h4>The signal chain</h4>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Stage</th><th>What it is</th><th>Where it's set</th></tr></thead>
+    <tbody>
+      <tr><td>Timer alarm</td><td>Fires an interrupt every 20&nbsp;&micro;s = <strong>50&nbsp;kHz</strong> sample rate</td><td class="mono">timer_hw-&gt;alarm[N]</td></tr>
+      <tr><td>DDS in the ISR</td><td>Advance a phase accumulator, look up a sine sample</td><td class="mono">phase_accum += phase_incr</td></tr>
+      <tr><td>SPI frame</td><td>16-bit word: 4 config bits + 12 data bits, at 20&nbsp;MHz</td><td class="mono">spi_write16_blocking()</td></tr>
+      <tr><td>MCP4822</td><td>Converts the 12-bit number to a voltage</td><td>hardware</td></tr>
+      <tr><td>Output</td><td>3.5&nbsp;mm socket &rarr; speaker; scope across the DAC output to verify</td><td>breadboard</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>SPI in one paragraph</h3>
+  <p>Synchronous, full-duplex, one controller and one or more peripherals, four wires. <strong>SCK</strong> is the clock, generated by the controller. <strong>MOSI</strong> carries data controller&nbsp;&rarr;&nbsp;peripheral, <strong>MISO</strong> carries it back the other way, and <strong>CS</strong> (active low) selects which peripheral is listening. Mechanically it is two shift registers wired into a ring: on each clock edge one bit leaves the controller and one bit enters it, so a 16-bit transfer both sends 16 bits and receives 16 bits, whether or not you care about what came back. With a DAC you don't &mdash; the MCP4822 has no MISO at all, so GPIO&nbsp;4 is declared and left unused.</p>
+
+  <h4>CPOL and CPHA</h4>
+  <p>Two bits that define when data is valid relative to the clock. <strong>CPOL</strong> = whether the clock idles low (0) or high (1). <strong>CPHA</strong> = whether data is sampled on the first clock edge (0) or the second (1). Four combinations, called modes 0&ndash;3. <strong>The peripheral's datasheet dictates which you use</strong> &mdash; the MCP4822 accepts (0,0) or (1,1), and Lab 1 uses (0,0).</p>
+
+<pre><code>spi_init(SPI_PORT, 20000000);              <span class="c">// 20 MHz baud rate</span>
+spi_set_format(SPI_PORT, 16, 0, 0, 0);     <span class="c">// 16 data bits, CPOL=0, CPHA=0, MSB first</span>
+gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
+gpio_set_function(PIN_SCK,  GPIO_FUNC_SPI);
+gpio_set_function(PIN_MOSI, GPIO_FUNC_SPI);
+gpio_set_function(PIN_CS,   GPIO_FUNC_SPI); <span class="c">// hardware drives CS per frame</span></code></pre>
+
+  <h4>Wiring</h4>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Pico 2</th><th>Physical pin</th><th>MCP4822</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">3V3(OUT)</td><td class="mono">36</td><td class="mono">V<sub>DD</sub></td><td>DAC supply</td></tr>
+      <tr><td class="mono">GND</td><td class="mono">3</td><td class="mono">V<sub>SS</sub></td><td>Common ground &mdash; must be shared</td></tr>
+      <tr><td class="mono">GPIO 5</td><td class="mono">7</td><td class="mono">CS</td><td>Chip select, active low</td></tr>
+      <tr><td class="mono">GPIO 6</td><td class="mono">9</td><td class="mono">SCK</td><td>Serial clock</td></tr>
+      <tr><td class="mono">GPIO 7</td><td class="mono">10</td><td class="mono">SDI</td><td>Serial data in (the Pico's MOSI)</td></tr>
+      <tr><td class="mono">GND</td><td class="mono">&mdash;</td><td class="mono">LDAC</td><td>Tie low so outputs update immediately</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><span class="lbl">Reading a datasheet to talk to a chip</span><p>"Sdi device data sheets gibes u all info" &mdash; the four sections that matter, in order: <strong>pinout</strong> (what to wire), <strong>electrical characteristics</strong> (supply range, max clock rate), <strong>timing diagrams</strong> (which SPI mode, setup/hold, how long a conversion takes), and the <strong>command / register map</strong> (what the bits mean). Everything else is packaging and test conditions.</p></div>
+</section>
+
+<!-- ================= 08 ================= -->
+<section id="dac">
+  <div class="sec-head"><div class="sec-num">08 &mdash; DAC</div><h2>The MCP4822 command word</h2></div>
+
+  <p>A <strong>DAC</strong> turns a number into a voltage &mdash; the mirror image of the ADC you'll use for the potentiometer. The MCP4822 is a <strong>dual-channel, 12-bit</strong> DAC with a built-in 2.048&nbsp;V reference, so it takes a number 0&ndash;4095 and produces a voltage without needing an external reference.</p>
+
+  <p>You talk to it with exactly one 16-bit SPI frame per update. Four config bits, then twelve data bits:</p>
+
+  <div class="bits"><div class="bits-row">
+    <div class="bit cfg"><span class="bn">15</span>A/B</div>
+    <div class="bit cfg"><span class="bn">14</span>BUF</div>
+    <div class="bit cfg"><span class="bn">13</span>GA</div>
+    <div class="bit cfg"><span class="bn">12</span>SHDN</div>
+    <div class="bit data"><span class="bn">11</span>D11</div>
+    <div class="bit data"><span class="bn">10</span>D10</div>
+    <div class="bit data"><span class="bn">9</span>D9</div>
+    <div class="bit data"><span class="bn">8</span>D8</div>
+    <div class="bit data"><span class="bn">7</span>D7</div>
+    <div class="bit data"><span class="bn">6</span>D6</div>
+    <div class="bit data"><span class="bn">5</span>D5</div>
+    <div class="bit data"><span class="bn">4</span>D4</div>
+    <div class="bit data"><span class="bn">3</span>D3</div>
+    <div class="bit data"><span class="bn">2</span>D2</div>
+    <div class="bit data"><span class="bn">1</span>D1</div>
+    <div class="bit data"><span class="bn">0</span>D0</div>
+  </div></div>
+  <div class="bits-key">
+    <span><b>A/B</b> 0 = channel A, 1 = channel B</span>
+    <span><b>BUF</b> reference input buffer, 0 = unbuffered</span>
+    <span><b>GA</b> 1 = &times;1 gain, 0 = &times;2 gain (active low)</span>
+    <span><b>SHDN</b> 1 = output active, 0 = shut down</span>
+  </div>
+
+  <p>So the config nibble used in the demo code is:</p>
+<pre><code>#define DAC_config_chan_A 0b0011000000000000  <span class="c">// A, unbuffered, gain 1x, active</span>
+#define DAC_config_chan_B 0b1011000000000000  <span class="c">// B, unbuffered, gain 1x, active</span>
+
+<span class="c">// merge config with a 12-bit sample and send one frame</span>
+DAC_data = DAC_config_chan_A | (value &amp; 0x0fff);
+spi_write16_blocking(SPI_PORT, &amp;DAC_data, 1);</code></pre>
+
+  <p>The <code>&amp; 0x0fff</code> matters: anything above bit 11 would corrupt your config bits and silently change channel or shut the output off.</p>
+
+  <h4>Output voltage</h4>
+  <p>With the internal 2.048&nbsp;V reference and 12 bits:</p>
+<pre><code>Vout = Vref &times; (D / 4096) &times; G     where Vref = 2.048 V, G = 1 or 2
+
+G = 1  &rarr;  0 to 2.046 V,  step = 0.5   mV
+G = 2  &rarr;  0 to 4.092 V,  step = 1.0   mV   (clipped by VDD = 3.3 V)</code></pre>
+  <p>At 3.3&nbsp;V supply you stay on gain&nbsp;&times;1, because &times;2 asks for more headroom than the supply has.</p>
+
+  <h4>Unsigned DAC, signed sine</h4>
+  <p>The DAC only accepts 0&ndash;4095, but a sine swings either side of zero. The fix is a DC offset: the sine table is built over &plusmn;2047 and you add 2047 before sending, which centres the waveform at roughly half of full scale. On the scope you'll see the sine riding on about 1&nbsp;V of DC &mdash; that is correct, and the audio coupling capacitor removes it before the speaker.</p>
+
+  <h4>LDAC</h4>
+  <p>The MCP4822 has an input latch and an output latch. A write lands in the input latch; pulling <strong>LDAC</strong> low transfers it to the output. Tie LDAC to ground and every write takes effect immediately. Its real purpose is making both channels change at exactly the same instant: write A, write B, then pulse LDAC once.</p>
+
+  <div class="note"><span class="lbl">Sanity check on the scope</span><p>The DAC settles in a few microseconds, so at 50&nbsp;kHz (20&nbsp;&micro;s per sample) you're comfortably inside spec. If the output is a flat line, check SHDN (bit 12) is 1 and CS is actually toggling; if the waveform is stepped and jagged, you're either at too low a sample rate or your 12-bit values are wrapping.</p></div>
+</section>
+
+<!-- ================= 09 ================= -->
+<section id="dds">
+  <div class="sec-head"><div class="sec-num">09 &mdash; DDS</div><h2>The timer interrupt and Direct Digital Synthesis</h2></div>
+
+  <h3>The timer</h3>
+  <p>The RP2350 has two 64-bit counters that tick once per microsecond, and each has <strong>four alarm registers</strong> with their own interrupt lines. You write a future timestamp into an alarm register; when the low 32 bits of the counter match it, the interrupt fires. Alarms are one-shot &mdash; to get a periodic interrupt you re-arm inside the handler.</p>
+
+<pre><code>#define ALARM_NUM 0
+#define ALARM_IRQ TIMER_IRQ_0
+#define DELAY 20                 <span class="c">// microseconds -&gt; 50 kHz</span>
+
+hw_set_bits(&amp;timer_hw-&gt;inte, 1u &lt;&lt; ALARM_NUM);   <span class="c">// enable this alarm</span>
+irq_set_exclusive_handler(ALARM_IRQ, alarm_irq);  <span class="c">// point IRQ at our function</span>
+irq_set_enabled(ALARM_IRQ, true);                 <span class="c">// enable it on the CPU</span>
+timer_hw-&gt;alarm[ALARM_NUM] = timer_hw-&gt;timerawl + DELAY;  <span class="c">// arm it</span>
+
+static void alarm_irq(void) {
+    hw_clear_bits(&amp;timer_hw-&gt;intr, 1u &lt;&lt; ALARM_NUM);       <span class="c">// ack, or it re-fires forever</span>
+    timer_hw-&gt;alarm[ALARM_NUM] = timer_hw-&gt;timerawl + DELAY; <span class="c">// re-arm</span>
+    <span class="c">// ... DDS + SPI write go here ...</span>
+}</code></pre>
+
+  <p>Two things bite people here. Forgetting to <strong>clear the interrupt flag</strong> means the handler is re-entered immediately and the program appears to hang. And everything inside the handler must finish in well under 20&nbsp;&micro;s, or you miss the next alarm &mdash; which is why the ISR uses integer maths and a lookup table rather than calling <code>sin()</code>.</p>
+
+  <h3>What DDS is</h3>
+  <p>You want a sine at an arbitrary frequency, produced by integer arithmetic only. The idea: keep a <strong>phase accumulator</strong> &mdash; a 32-bit unsigned integer representing your position around one cycle, where the full 32-bit range is exactly 360&deg;. Every sample, add a fixed <strong>phase increment</strong>. The accumulator overflows naturally at the top of the cycle, which is exactly the wraparound a phase needs. Use the top 8 bits as an index into a 256-entry sine table.</p>
+
+<pre><code>volatile unsigned int phase_accum_main;
+volatile unsigned int phase_incr_main = (800.0 * two32) / Fs;  <span class="c">// 800 Hz</span>
+
+<span class="c">// once, at startup: build the table</span>
+for (int i = 0; i &lt; 256; i++)
+    sin_table[i] = (int)(2047 * sin((float)i * 6.283 / 256.0));
+
+<span class="c">// every ISR:</span>
+phase_accum_main += phase_incr_main;
+int sample = sin_table[phase_accum_main &gt;&gt; 24];   <span class="c">// top 8 bits = index 0..255</span>
+DAC_data = DAC_config_chan_A | ((sample + 2047) &amp; 0x0fff);
+spi_write16_blocking(SPI_PORT, &amp;DAC_data, 1);</code></pre>
+
+  <h4>The one formula to remember</h4>
+<pre><code>phase_incr = (f_desired &times; 2^32) / f_sample</code></pre>
+  <p>Worked example, 800&nbsp;Hz at 50&nbsp;kHz: <code>(800 &times; 4294967296) / 50000 = 68719476</code>. Add that 50,000 times and you have advanced 800 full turns &mdash; 800&nbsp;Hz, exactly. Change one variable and the frequency changes on the next sample, with no clicks and no recomputed table. That is the whole appeal, and it's what makes a swept chirp (a cardinal's song) easy.</p>
+
+  <h4>Why the top bits</h4>
+  <p>The accumulator has 32 bits of phase resolution but the table only has 256 entries, so you take the <strong>most significant</strong> 8 bits (<code>&gt;&gt; 24</code>) as the index and let the remaining 24 bits accumulate fractional phase. Frequency resolution is <code>f_sample / 2^32</code> &asymp; 12&nbsp;&micro;Hz at 50&nbsp;kHz &mdash; far finer than the table alone would give.</p>
+
+  <h4>Fixed point</h4>
+  <p>Floating point in an ISR is slow. Fixed point stores a fractional number in an integer by agreeing where the binary point sits &mdash; the course convention is 1.15.16, one sign bit, 15 integer bits, 16 fraction bits. Addition and subtraction are plain integer ops; multiplication needs a shift afterwards to put the point back. The phase accumulator above is fixed-point thinking already: it's a 0.32 fraction of a cycle.</p>
+</section>
+
+<!-- ================= 10 ================= -->
+<section id="gloss">
+  <div class="sec-head"><div class="sec-num">10 &mdash; REFERENCE</div><h2>Acronyms</h2></div>
+  <dl class="gloss">
+    <div><dt>ADC</dt><dd>Analog-to-Digital Converter. Voltage in, number out. Reads the potentiometer.</dd></div>
+    <div><dt>CS / CSn</dt><dd>Chip Select, active low. Tells one SPI peripheral that this frame is for it.</dd></div>
+    <div><dt>CPOL / CPHA</dt><dd>Clock polarity and phase &mdash; the two bits that define an SPI mode.</dd></div>
+    <div><dt>DAC</dt><dd>Digital-to-Analog Converter. Number in, voltage out. The MCP4822.</dd></div>
+    <div><dt>DDS</dt><dd>Direct Digital Synthesis. Phase accumulator + lookup table = arbitrary frequency.</dd></div>
+    <div><dt>GPIO</dt><dd>General Purpose Input/Output. A pin you control.</dd></div>
+    <div><dt>IRQ / ISR</dt><dd>Interrupt Request, and the Interrupt Service Routine that handles it.</dd></div>
+    <div><dt>LDAC</dt><dd>Load DAC, active low. Moves the input latch to the output latch.</dd></div>
+    <div><dt>MOSI / MISO</dt><dd>Controller-out-peripheral-in and the reverse. Also written COPI/CIPO.</dd></div>
+    <div><dt>PIO</dt><dd>Programmable I/O. Tiny state machines that generate protocols in hardware.</dd></div>
+    <div><dt>SDI</dt><dd>Serial Data In &mdash; the MCP4822's name for the pin you drive with MOSI.</dd></div>
+    <div><dt>SDK</dt><dd>Software Development Kit. Raspberry Pi's C/C++ libraries for the RP2040/RP2350.</dd></div>
+    <div><dt>SIO</dt><dd>Single-cycle I/O. Direct software pin control, one cycle per access. Not SPI.</dd></div>
+    <div><dt>SPI</dt><dd>Serial Peripheral Interface. SCK, MOSI, MISO, CS. Two blocks: SPI0, SPI1.</dd></div>
+    <div><dt>SWD</dt><dd>Serial Wire Debug. The two-wire link the debug probe uses.</dd></div>
+    <div><dt>UF2</dt><dd>The drag-and-drop firmware file format. No symbols &mdash; the debugger wants the .elf.</dd></div>
+    <div><dt>XIP</dt><dd>Execute In Place. Running code straight out of external flash.</dd></div>
+  </dl>
+</section>
+
+<!-- ================= 11 ================= -->
+<section id="todo">
+  <div class="sec-head"><div class="sec-num">11 &mdash; OPEN</div><h2>To confirm from lecture</h2></div>
+  <ol>
+    <li><strong>"Second question &rarr; No"</strong> &mdash; which dialog, and which question. Likely the RISC-V toggle in the Pico VS&nbsp;Code project wizard, but confirm. (&sect;00)</li>
+    <li><strong>"Automatically an output"</strong> &mdash; the SDK's <code>gpio_init()</code> leaves a pin as an <em>input</em>. Check what was actually said; it may have referred to a peripheral function taking over drive. (&sect;04)</li>
+    <li><strong>Instructor's name</strong> &mdash; the notes say "Hunter van"; the course is taught by <strong>V. Hunter Adams</strong> (vanhunteradams.com &mdash; the "van" is from the site name).</li>
+    <li><strong>Your lab's actual pin assignment</strong> &mdash; the GPIO 5/6/7 mapping above is from the course demo code; confirm against your own lab handout before wiring.</li>
+    <li><strong>Sample rate</strong> &mdash; 50&nbsp;kHz / 20&nbsp;&micro;s is the demo value. Lab 1 may specify a different one.</li>
+  </ol>
+</section>
+
+<footer>
+  Sources: <a href="https://ece4760.github.io/">ECE 4760 course site</a> &middot;
+  <a href="https://vanhunteradams.com/Pico/Birds/Birdsong.html">Lab 1: Synthesizing Birdsong</a> &middot;
+  <a href="https://vanhunteradams.com/Pico/TimerIRQ/SPI_DDS.html">Timer IRQ + SPI DDS</a> &middot;
+  <a href="https://vanhunteradams.com/Protocols/SPI/SPI.html">SPI protocol notes</a> &middot;
+  <a href="https://www.raspberrypi.com/documentation/pico-sdk/hardware.html">Pico SDK Hardware APIs</a> &middot;
+  <a href="https://pip.raspberrypi.com/documents/RP-008373-DS-rp2350-datasheet.pdf">RP2350 datasheet</a> &middot;
+  <a href="https://www.microchip.com/en-us/product/mcp4822">MCP4822</a>
+</footer>
+
+</main>
+</div>
+</div>
+
+</body></html>
