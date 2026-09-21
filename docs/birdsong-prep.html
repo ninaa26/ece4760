@@ -1,0 +1,730 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>ECE 4760 Birdsong Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#F5F1F0;
+  --surface:#FFFCFB;
+  --surface-2:#EFE9E7;
+  --ink:#1E1917;
+  --ink-2:#574E4B;
+  --ink-3:#8A7F7B;
+  --rule:#E0D7D4;
+  --rule-strong:#C9BDB9;
+  --cardinal:#A82A1E;
+  --cardinal-tint:#F7E5E2;
+  --slate:#2F5468;
+  --slate-tint:#E4EDF2;
+  --code-bg:#F1ECEA;
+  --shadow:0 1px 2px rgba(30,25,23,.06),0 6px 18px -10px rgba(30,25,23,.18);
+
+  --f-display:"Zilla Slab",Georgia,"Times New Roman",serif;
+  --f-body:"Source Sans 3","Segoe UI",Helvetica,Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#151211;
+    --surface:#1D1918;
+    --surface-2:#262120;
+    --ink:#EFE8E5;
+    --ink-2:#B4A9A5;
+    --ink-3:#8A7F7B;
+    --rule:#332C2A;
+    --rule-strong:#4A403D;
+    --cardinal:#E8776A;
+    --cardinal-tint:#38201C;
+    --slate:#8FC0D6;
+    --slate-tint:#1B2C34;
+    --code-bg:#221D1C;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px -10px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#151211;
+  --surface:#1D1918;
+  --surface-2:#262120;
+  --ink:#EFE8E5;
+  --ink-2:#B4A9A5;
+  --ink-3:#8A7F7B;
+  --rule:#332C2A;
+  --rule-strong:#4A403D;
+  --cardinal:#E8776A;
+  --cardinal-tint:#38201C;
+  --slate:#8FC0D6;
+  --slate-tint:#1B2C34;
+  --code-bg:#221D1C;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px -10px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:17px;
+  line-height:1.62;
+  -webkit-text-size-adjust:100%;
+}
+@media (max-width:520px){ body{font-size:16.5px} }
+
+.wrap{max-width:43rem;margin:0 auto;padding:0 1.25rem 5rem}
+
+/* ---------- sticky jump bar ---------- */
+.jump{
+  position:sticky;top:0;z-index:20;
+  background:color-mix(in srgb,var(--paper) 88%,transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--rule);
+}
+.jump-inner{
+  max-width:43rem;margin:0 auto;
+  display:flex;gap:.4rem;align-items:center;
+  padding:.5rem 1.25rem;
+  overflow-x:auto;scrollbar-width:none;
+}
+.jump-inner::-webkit-scrollbar{display:none}
+.jump a{
+  flex:0 0 auto;
+  font-family:var(--f-mono);font-size:.72rem;font-weight:500;
+  letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-2);text-decoration:none;
+  padding:.3rem .55rem;border-radius:3px;
+  border:1px solid transparent;
+}
+.jump a:hover{color:var(--cardinal);border-color:var(--rule-strong)}
+.jump a:focus-visible{outline:2px solid var(--cardinal);outline-offset:1px}
+
+/* ---------- masthead ---------- */
+.masthead{padding:2.6rem 0 1.6rem;border-bottom:2px solid var(--ink)}
+.eyebrow{
+  font-family:var(--f-mono);font-size:.72rem;font-weight:500;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--cardinal);
+  margin:0 0 .7rem;
+}
+h1{
+  font-family:var(--f-display);font-weight:700;
+  font-size:2.4rem;line-height:1.08;letter-spacing:-.015em;
+  margin:0 0 .55rem;text-wrap:balance;
+}
+@media (max-width:520px){ h1{font-size:2rem} }
+.standfirst{margin:0;color:var(--ink-2);font-size:1.06rem;max-width:34rem}
+.byline{
+  margin:1.1rem 0 0;font-family:var(--f-mono);font-size:.75rem;
+  color:var(--ink-3);letter-spacing:.02em;
+}
+
+/* ---------- answers at a glance ---------- */
+.glance{margin:2rem 0 0}
+.glance h2{margin-bottom:.9rem}
+.glance dl{
+  margin:0;display:grid;gap:0;
+  border-top:1px solid var(--rule);
+}
+.glance div{
+  display:grid;
+  grid-template-columns:2.6rem 1fr;
+  gap:0 .9rem;align-items:baseline;
+  padding:.7rem 0;
+  border-bottom:1px solid var(--rule);
+}
+.glance dt{
+  font-family:var(--f-mono);font-size:.74rem;font-weight:600;
+  letter-spacing:.06em;color:var(--cardinal);
+  text-transform:uppercase;
+}
+.glance dd{margin:0;font-size:.97rem}
+.glance dd b{font-weight:600;font-variant-numeric:tabular-nums}
+.glance dd span{color:var(--ink-2);display:block;font-size:.87rem;line-height:1.45}
+
+/* ---------- headings ---------- */
+h2{
+  font-family:var(--f-display);font-weight:600;
+  font-size:1.02rem;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 1rem;
+}
+section{scroll-margin-top:3.6rem}
+.qhead{
+  display:flex;align-items:baseline;gap:.7rem;
+  margin:3.4rem 0 .2rem;padding-top:1.6rem;
+  border-top:1px solid var(--rule-strong);
+}
+.qnum{
+  flex:0 0 auto;
+  font-family:var(--f-mono);font-size:.78rem;font-weight:600;
+  letter-spacing:.08em;color:var(--cardinal);
+  background:var(--cardinal-tint);
+  padding:.15rem .45rem;border-radius:3px;
+}
+.qtitle{
+  font-family:var(--f-display);font-weight:600;
+  font-size:1.55rem;line-height:1.18;letter-spacing:-.01em;
+  margin:0;text-wrap:balance;
+}
+@media (max-width:520px){ .qtitle{font-size:1.35rem} }
+h4{
+  font-family:var(--f-body);font-weight:600;font-size:1.03rem;
+  margin:1.9rem 0 .35rem;color:var(--ink);
+}
+.sub{
+  font-family:var(--f-mono);font-size:.72rem;font-weight:500;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--slate);
+  margin:2.2rem 0 .5rem;
+}
+p{margin:0 0 1rem}
+ul{margin:0 0 1rem;padding-left:1.1rem}
+li{margin:0 0 .45rem}
+li::marker{color:var(--ink-3)}
+strong{font-weight:600}
+a{color:var(--cardinal)}
+
+/* ---------- answer callout ---------- */
+.answer{
+  border-left:3px solid var(--cardinal);
+  background:var(--surface);
+  padding:.95rem 1.1rem;
+  margin:1.2rem 0 1.4rem;
+  border-radius:0 4px 4px 0;
+  box-shadow:var(--shadow);
+}
+.answer .lab{
+  font-family:var(--f-mono);font-size:.68rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--cardinal);
+  display:block;margin-bottom:.4rem;
+}
+.answer p:last-child{margin-bottom:0}
+.answer .big{
+  font-family:var(--f-display);font-weight:600;font-size:1.3rem;
+  line-height:1.3;font-variant-numeric:tabular-nums;
+}
+
+/* ---------- datasheet excerpt ---------- */
+.datasheet{
+  font-family:var(--f-mono);font-size:.79rem;line-height:1.9;
+  background:var(--code-bg);border:1px solid var(--rule);
+  border-radius:4px;padding:.85rem 1rem;
+  margin:1.1rem 0 1.3rem;
+  overflow-x:auto;
+}
+.datasheet .row{display:flex;align-items:baseline;white-space:nowrap;gap:.4rem}
+.datasheet .leader{
+  flex:1 1 auto;min-width:1.2rem;
+  border-bottom:1px dotted var(--rule-strong);
+  transform:translateY(-.22em);
+}
+.datasheet .val{font-weight:600;font-variant-numeric:tabular-nums}
+.datasheet .hit .val{color:var(--cardinal)}
+.datasheet .cap{
+  display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:.5rem;white-space:normal;
+}
+
+/* ---------- code ---------- */
+code{
+  font-family:var(--f-mono);font-size:.86em;
+  background:var(--code-bg);padding:.1em .32em;border-radius:3px;
+  border:1px solid var(--rule);
+}
+pre{
+  font-family:var(--f-mono);font-size:.8rem;line-height:1.75;
+  background:var(--code-bg);border:1px solid var(--rule);
+  border-radius:4px;padding:.9rem 1rem;
+  margin:.9rem 0 1.3rem;overflow-x:auto;
+}
+pre code{background:none;border:0;padding:0;font-size:1em}
+.cm{color:var(--ink-3);font-style:italic}
+.kw{color:var(--slate);font-weight:500}
+.num{color:var(--cardinal)}
+
+/* ---------- formula ---------- */
+.formula{
+  font-family:var(--f-mono);font-size:.95rem;
+  text-align:center;color:var(--ink);
+  background:var(--slate-tint);
+  border-radius:4px;padding:.85rem 1rem;
+  margin:1.1rem 0;overflow-x:auto;white-space:nowrap;
+}
+
+/* ---------- timer table ---------- */
+.tbl-wrap{overflow-x:auto;margin:1.1rem 0 1.4rem}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th{
+  font-family:var(--f-mono);font-size:.68rem;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  text-align:left;padding:0 .8rem .5rem 0;
+  border-bottom:1px solid var(--rule-strong);
+}
+td{padding:.52rem .8rem .52rem 0;border-bottom:1px solid var(--rule);vertical-align:top}
+td:first-child{font-family:var(--f-mono);font-size:.85rem;white-space:nowrap}
+.pill{
+  display:inline-block;font-family:var(--f-mono);
+  font-size:.68rem;font-weight:600;letter-spacing:.06em;
+  padding:.12rem .45rem;border-radius:2px;white-space:nowrap;
+}
+.pill.free{background:var(--slate-tint);color:var(--slate)}
+.pill.taken{background:var(--cardinal-tint);color:var(--cardinal)}
+
+/* ---------- figure ---------- */
+figure{margin:1.6rem 0 1.8rem}
+.fig-scroll{overflow-x:auto;padding-bottom:.3rem}
+figure svg{display:block;min-width:520px;width:100%;height:auto}
+figcaption{
+  font-family:var(--f-mono);font-size:.72rem;line-height:1.6;
+  color:var(--ink-3);margin-top:.6rem;
+}
+
+/* ---------- traps ---------- */
+.traps{
+  margin-top:1.2rem;display:grid;gap:.75rem;
+}
+.trap{
+  background:var(--surface);border:1px solid var(--rule);
+  border-radius:5px;padding:.9rem 1rem;box-shadow:var(--shadow);
+  display:grid;grid-template-columns:1.6rem 1fr;gap:0 .75rem;align-items:start;
+}
+.trap .n{
+  font-family:var(--f-mono);font-size:.8rem;font-weight:600;
+  color:var(--cardinal);line-height:1.5;
+}
+.trap p{margin:0;font-size:.95rem}
+.trap p+p{margin-top:.3rem;color:var(--ink-2);font-size:.9rem}
+.trap b{font-weight:600}
+
+/* ---------- warn ---------- */
+.warn{
+  background:var(--cardinal-tint);
+  border:1px solid color-mix(in srgb,var(--cardinal) 35%,transparent);
+  border-radius:5px;padding:.9rem 1.05rem;margin:1.2rem 0 1.4rem;
+}
+.warn .lab{
+  font-family:var(--f-mono);font-size:.68rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--cardinal);
+  display:block;margin-bottom:.4rem;
+}
+.warn p{margin:0;font-size:.95rem}
+.warn p+p{margin-top:.5rem}
+
+footer{
+  margin-top:3.5rem;padding-top:1.3rem;border-top:1px solid var(--rule);
+  font-family:var(--f-mono);font-size:.72rem;line-height:1.7;color:var(--ink-3);
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+</style>
+
+<nav class="jump">
+  <div class="jump-inner">
+    <a href="#glance">Answers</a>
+    <a href="#basics">Basics</a>
+    <a href="#q1">Q1 Current</a>
+    <a href="#q2">Q2 Timers</a>
+    <a href="#q3">Q3 44 kHz</a>
+    <a href="#q4">Q4 DDS</a>
+    <a href="#q5">Q5 Envelopes</a>
+    <a href="#traps">Traps</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">ECE 4760 &middot; Fall 2021 &middot; Lab 1 prelab</p>
+    <h1>Synthesizing a Northern&nbsp;Cardinal</h1>
+    <p class="standfirst">Answers to the five prelab questions, plus the background that makes them make sense &mdash; timers, interrupts, SPI, and direct digital synthesis, assuming you start from zero.</p>
+    <p class="byline">PIC32MX250F128B &middot; 40 MHz &middot; F<sub>s</sub> = 44 kHz</p>
+  </header>
+
+  <section id="glance" class="glance">
+    <h2>Answers at a glance</h2>
+    <dl>
+      <div>
+        <dt>Q1</dt>
+        <dd><b>15 mA</b> per I/O pin; <b>200 mA</b> summed across all ports.
+        <span>Not 25 mA &mdash; that is the MX3XX/4XX family.</span></dd>
+      </div>
+      <div>
+        <dt>Q2</dt>
+        <dd>ProtoThreads owns <b>Timer 1</b>.
+        <span>Timers 2, 3, 4 and 5 are all yours. Serial debug also takes UART2 + DMA ch. 1.</span></dd>
+      </div>
+      <div>
+        <dt>Q3</dt>
+        <dd><b>909</b> timer cycles.
+        <span>OpenTimer2 &rarr; ConfigIntTimer2 &rarr; mT2ClearIntFlag.</span></dd>
+      </div>
+      <div>
+        <dt>Q4</dt>
+        <dd><b>1.02 &times; 10<sup>&minus;5</sup> Hz</b> &mdash; about 10 &micro;Hz.
+        <span>F<sub>s</sub> divided by 2<sup>32</sup>.</span></dd>
+      </div>
+      <div>
+        <dt>Q5</dt>
+        <dd>Exponential, raised cosine, ADSR, Gaussian, table lookup.
+        <span>Trade CPU cost against how much the envelope clicks.</span></dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- ============ BASICS ============ -->
+  <section id="basics">
+    <div class="qhead">
+      <span class="qnum">PART 0</span>
+      <h3 class="qtitle">The background you actually need</h3>
+    </div>
+
+    <p class="sub">The chip</p>
+    <p>A microcontroller is a whole computer on one chip: a MIPS CPU at <strong>40 MHz</strong>, 32 KB of RAM, 128 KB of flash, and &mdash; the part that matters here &mdash; a pile of <strong>peripherals</strong>: timers, SPI, UART, ADC, I/O pins.</p>
+    <p>The mental model that makes embedded C click: <strong>peripherals are hardware that runs independently of your code.</strong> You configure them by writing to registers, and then they just <em>go</em> &mdash; counting, shifting bits out, sampling voltages &mdash; while the CPU does something else. Your program mostly sets them up and reacts when they signal you.</p>
+
+    <p class="sub">I/O pins</p>
+    <p>Every pin is either an input (read a voltage) or an output (drive 3.3 V or 0 V). Three registers:</p>
+    <ul>
+      <li><code>TRISx</code> &mdash; direction. <code>0</code> = output, <code>1</code> = input. Mnemonic: <strong>0</strong> looks like <strong>O</strong>utput, <strong>1</strong> looks like <strong>I</strong>nput.</li>
+      <li><code>PORTx</code> &mdash; read the actual pin voltage.</li>
+      <li><code>LATx</code> &mdash; the latch, what you are driving out. Always <em>write</em> <code>LAT</code>, <em>read</em> <code>PORT</code>.</li>
+    </ul>
+    <p>The chip also has <strong>peripheral pin select</strong>: SPI and UART signals can be routed to different physical pins in software. That is what lines like <code>PPSOutput(2, RPB5, SDO2)</code> do &mdash; "send SPI2's data-out to pin RB5."</p>
+
+    <p class="sub">Timers and interrupts</p>
+    <p>A timer is a counter in hardware. It ticks every peripheral-clock cycle &mdash; 0, 1, 2, 3 &hellip; &mdash; and when it reaches the value in its <strong>period register</strong> (<code>PR2</code> for timer 2), it resets to zero and raises a flag. That is the entire peripheral. Two knobs: the <strong>prescaler</strong> divides the clock before counting, and the <strong>period register</strong> sets how high it counts.</p>
+    <p>An <strong>interrupt</strong> is the hardware saying "stop what you are doing and run this function now." When the timer rolls over it sets its flag; if that interrupt is enabled, the CPU jumps into your <strong>ISR</strong>, runs it, and returns to exactly where it was. Your main code never notices.</p>
+    <p>This is how you get <em>precise</em> timing. A delay loop in <code>main()</code> would jitter every time other code ran; a timer interrupt is spaced by hardware.</p>
+
+    <p class="sub">The audio path</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 640 128" role="img" aria-label="Signal chain: Timer 2 interrupt to DDS to envelope to SPI and DAC to speaker">
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5">
+            <!-- boxes -->
+            <rect x="6" y="34" width="104" height="42" rx="4" fill="var(--cardinal-tint)" stroke="var(--cardinal)" stroke-width="1"/>
+            <text x="58" y="51" text-anchor="middle" fill="var(--cardinal)" font-weight="600">Timer 2 ISR</text>
+            <text x="58" y="65" text-anchor="middle" fill="var(--ink-2)">43,956 Hz</text>
+
+            <rect x="140" y="34" width="104" height="42" rx="4" fill="var(--surface)" stroke="var(--rule-strong)" stroke-width="1"/>
+            <text x="192" y="51" text-anchor="middle" fill="var(--ink)" font-weight="600">DDS</text>
+            <text x="192" y="65" text-anchor="middle" fill="var(--ink-2)">sine table</text>
+
+            <rect x="274" y="34" width="104" height="42" rx="4" fill="var(--surface)" stroke="var(--rule-strong)" stroke-width="1"/>
+            <text x="326" y="51" text-anchor="middle" fill="var(--ink)" font-weight="600">envelope</text>
+            <text x="326" y="65" text-anchor="middle" fill="var(--ink-2)">&times; amplitude</text>
+
+            <rect x="408" y="34" width="104" height="42" rx="4" fill="var(--surface)" stroke="var(--rule-strong)" stroke-width="1"/>
+            <text x="460" y="51" text-anchor="middle" fill="var(--ink)" font-weight="600">SPI2</text>
+            <text x="460" y="65" text-anchor="middle" fill="var(--ink-2)">MCP4822 DAC</text>
+
+            <rect x="542" y="34" width="92" height="42" rx="4" fill="var(--slate-tint)" stroke="var(--slate)" stroke-width="1"/>
+            <text x="588" y="51" text-anchor="middle" fill="var(--slate)" font-weight="600">speaker</text>
+            <text x="588" y="65" text-anchor="middle" fill="var(--ink-2)">analog</text>
+
+            <!-- arrows -->
+            <g stroke="var(--rule-strong)" stroke-width="1.2" fill="none">
+              <path d="M112 55 H136"/><path d="M246 55 H270"/>
+              <path d="M380 55 H404"/><path d="M514 55 H538"/>
+            </g>
+            <g fill="var(--rule-strong)">
+              <path d="M136 55 l-6 -3.2 v6.4 z"/><path d="M270 55 l-6 -3.2 v6.4 z"/>
+              <path d="M404 55 l-6 -3.2 v6.4 z"/><path d="M538 55 l-6 -3.2 v6.4 z"/>
+            </g>
+
+            <!-- budget bracket -->
+            <g stroke="var(--cardinal)" stroke-width="1" fill="none" stroke-dasharray="3 3">
+              <path d="M6 88 V100 H512 V88"/>
+            </g>
+            <text x="259" y="116" text-anchor="middle" fill="var(--cardinal)" font-size="10">all of this in 909 cycles &mdash; 22.7 &micro;s &mdash; every sample</text>
+
+            <text x="6" y="22" fill="var(--ink-3)" font-size="9.5" letter-spacing="1.2">ONE SAMPLE, 44,000 TIMES A SECOND</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>The PIC32 has no good analog output, so an external MCP4822 DAC turns each 12-bit number into a voltage. You talk to it over SPI: a clock wire, a data wire, and a chip-select wire.</figcaption>
+    </figure>
+
+    <p class="sub">DDS &mdash; the core trick</p>
+    <p>You want an arbitrary frequency from integer math, fast. A 256-entry sine table stepped one entry per sample gives you exactly one frequency. Step by two and you get double. Step by 1.5? You cannot &mdash; integers.</p>
+    <p>So: keep a 32-bit <strong>phase accumulator</strong>, add a constant increment to it every sample, and let it overflow. The overflow <em>is</em> the wrap from 2&pi; back to 0. Use only the <strong>top 8 bits</strong> as your table index.</p>
+    <pre><code>phase_accum += phase_increment;          <span class="cm">// 32-bit; overflow is the point</span>
+output = sine_table[phase_accum &gt;&gt; <span class="num">24</span>];  <span class="cm">// top 8 bits = index 0..255</span></code></pre>
+
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 640 156" role="img" aria-label="32-bit phase accumulator, top 8 bits index the sine table, low 24 bits hold fractional phase">
+          <g font-family="IBM Plex Mono, monospace">
+            <text x="40" y="18" fill="var(--ink-3)" font-size="9.5" letter-spacing="1.2">32-BIT PHASE ACCUMULATOR</text>
+            <text x="40" y="36" fill="var(--ink-3)" font-size="10" text-anchor="start">31</text>
+            <text x="180" y="36" fill="var(--ink-3)" font-size="10" text-anchor="middle">24</text>
+            <text x="600" y="36" fill="var(--ink-3)" font-size="10" text-anchor="end">0</text>
+
+            <rect x="40" y="42" width="140" height="42" fill="var(--cardinal-tint)" stroke="var(--cardinal)" stroke-width="1.2"/>
+            <rect x="180" y="42" width="420" height="42" fill="var(--surface-2)" stroke="var(--rule-strong)" stroke-width="1.2"/>
+
+            <text x="110" y="68" text-anchor="middle" fill="var(--cardinal)" font-size="11.5" font-weight="600">8 bits</text>
+            <text x="390" y="68" text-anchor="middle" fill="var(--ink-2)" font-size="11.5" font-weight="600">24 bits</text>
+
+            <g stroke="var(--rule-strong)" stroke-width="1" fill="none">
+              <path d="M110 84 V96"/><path d="M390 84 V96"/>
+            </g>
+
+            <text x="110" y="110" text-anchor="middle" fill="var(--ink)" font-size="10.5">sine table index</text>
+            <text x="110" y="124" text-anchor="middle" fill="var(--ink-3)" font-size="10.5">0&ndash;255</text>
+
+            <text x="390" y="110" text-anchor="middle" fill="var(--ink)" font-size="10.5">fractional phase &mdash; never read directly</text>
+            <text x="390" y="124" text-anchor="middle" fill="var(--ink-3)" font-size="10.5">this is where the frequency resolution lives</text>
+
+            <text x="40" y="148" fill="var(--slate)" font-size="10.5">increment = f &times; 2^32 / Fs, added once per sample</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Table size sets waveform quality. Accumulator width sets frequency precision. They are independent &mdash; which is why a coarse 256-entry table still gives microhertz tuning.</figcaption>
+    </figure>
+
+    <p class="sub">ProtoThreads</p>
+    <p>There is no operating system here. ProtoThreads is a header full of macros that lets you write several concurrent-looking loops &mdash; scan the keypad, sequence the song &mdash; that hand control back to each other. It is <strong>cooperative</strong>: a thread runs until it hits a <code>PT_YIELD</code> and gives up the CPU. Nothing preempts it.</p>
+    <p>The critical thing: <strong>ProtoThreads are not for real-time work.</strong> Your 44 kHz audio lives in the timer ISR, which is real hardware preemption. Threads handle the slow stuff &mdash; keypad every 30 ms, song sequencing, terminal output.</p>
+    <p>Also: threads have <strong>no stack of their own</strong>, so local variables do not survive a yield. Declare them <code>static</code>.</p>
+
+    <p class="sub">Fixed point</p>
+    <p>There is no floating-point hardware. <code>float</code> math is emulated in software and far too slow for a 22 &micro;s ISR. So you scale fractions by a power of two and store them as integers. The course convention is <strong>1.15.16</strong>: a signed 32-bit int with 16 integer bits and 16 fraction bits, so <code>1.0</code> is stored as <code>65536</code>. Addition is plain integer addition; multiplication needs a shift afterward.</p>
+  </section>
+
+  <!-- ============ Q1 ============ -->
+  <section id="q1">
+    <div class="qhead">
+      <span class="qnum">Q1</span>
+      <h3 class="qtitle">Pin current limits</h3>
+    </div>
+
+    <div class="answer">
+      <span class="lab">Answer</span>
+      <p class="big">15 mA from any one I/O pin.<br>200 mA summed across all ports.</p>
+    </div>
+
+    <p>Straight from the Absolute Maximum Ratings table (section 29.0) of the PIC32MX1XX/2XX datasheet:</p>
+
+    <div class="datasheet">
+      <span class="cap">Absolute Maximum Ratings &mdash; DS61168E, p.243</span>
+      <div class="row"><span>Maximum current out of V<sub>SS</sub> pin(s)</span><span class="leader"></span><span class="val">300 mA</span></div>
+      <div class="row"><span>Maximum current into V<sub>DD</sub> pin(s)</span><span class="leader"></span><span class="val">300 mA</span></div>
+      <div class="row hit"><span>Maximum output current sunk by any I/O pin</span><span class="leader"></span><span class="val">15 mA</span></div>
+      <div class="row hit"><span>Maximum output current sourced by any I/O pin</span><span class="leader"></span><span class="val">15 mA</span></div>
+      <div class="row hit"><span>Maximum current sunk by all ports</span><span class="leader"></span><span class="val">200 mA</span></div>
+      <div class="row hit"><span>Maximum current sourced by all ports</span><span class="leader"></span><span class="val">200 mA</span></div>
+    </div>
+
+    <div class="warn">
+      <span class="lab">Watch out</span>
+      <p>A lot of circulating answers say <strong>25 mA</strong>. That is the PIC32MX<strong>3XX/4XX</strong> family &mdash; the older 4760 chip. For the <strong>2XX</strong> part you are actually using it is <strong>15 mA</strong>.</p>
+    </div>
+
+    <p><strong>Why you care:</strong> these are <em>absolute maximums</em> &mdash; exceeding them can permanently damage the chip, and it is the classic way to kill a board. Practically: never drive a speaker, motor, or bare LED straight off a pin without a series resistor.</p>
+    <p>Note the two limits are independent. You cannot pull 15 mA from fourteen pins at once, because 14 &times; 15 = 210 mA blows the 200 mA total budget. And absolute max is the <em>damage</em> threshold, not the current at which the pin still produces a valid logic level &mdash; for a clean 3.3 V output, stay well under it.</p>
+  </section>
+
+  <!-- ============ Q2 ============ -->
+  <section id="q2">
+    <div class="qhead">
+      <span class="qnum">Q2</span>
+      <h3 class="qtitle">What hardware does ProtoThreads use?</h3>
+    </div>
+
+    <div class="answer">
+      <span class="lab">Answer</span>
+      <p><strong>Timer 1</strong> and its interrupt, for the millisecond system tick behind <code>PT_YIELD_TIME_msec()</code>. Timers 2, 3, 4 and 5 are all free &mdash; so <strong>yes</strong> to all three parts of the question.</p>
+    </div>
+
+    <p>From the ProtoThreads page: <em>"Moved thread system timer to timer 1 for better use of more flexible timers 4 and 5."</em> That change is exactly why the answer is yes &mdash; system timing was deliberately moved off Timer 5 so you get the flexible 16-bit timers.</p>
+
+    <p>It also uses, <strong>only if you enable the optional serial/debug features</strong>: <strong>UART2</strong> for the terminal thread, <strong>DMA channel 1</strong> for UART2 transmit, and <strong>CVrefOut (pin 25)</strong> for the scope-debug feature. And it depends on the interrupt system being live &mdash; the page warns that turning interrupts off, or failing to turn them on, <strong>crashes ProtoThreads</strong>. Do not touch Timer 1's control registers.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Timer</th><th>Status</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>Timer 1</td><td><span class="pill taken">TAKEN</span></td><td>ProtoThreads system tick</td></tr>
+          <tr><td>Timer 2</td><td><span class="pill free">FREE</span></td><td>Use this one for 44 kHz audio</td></tr>
+          <tr><td>Timer 3</td><td><span class="pill free">FREE</span></td><td></td></tr>
+          <tr><td>Timer 4</td><td><span class="pill free">FREE</span></td><td></td></tr>
+          <tr><td>Timer 5</td><td><span class="pill free">FREE</span></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Two caveats worth carrying into lab. First, <strong>older versions of the library used Timer 5</strong> &mdash; that is why you will find a different answer in old lab reports. Trust the header you were given; <code>grep -n "OpenTimer" pt_cornell_1_3_2.h</code> settles it in seconds. Second, timers pair into 32-bit units (Timer2+3 becomes "Timer23", Timer4+5 becomes "Timer45"), and opening a 32-bit timer consumes both halves. You only need 16 bits here, so it should not come up.</p>
+  </section>
+
+  <!-- ============ Q3 ============ -->
+  <section id="q3">
+    <div class="qhead">
+      <span class="qnum">Q3</span>
+      <h3 class="qtitle">Setting up the 44 kHz audio timer</h3>
+    </div>
+
+    <h4>Part 1 &mdash; how many cycles?</h4>
+    <p>With prescaler 1, the timer counts at the peripheral bus clock, which is 40 MHz here &mdash; one tick every 25 ns.</p>
+    <div class="formula">40,000,000 &divide; 44,000 = 909.09 cycles per interrupt</div>
+
+    <div class="answer">
+      <span class="lab">Answer</span>
+      <p class="big">909 timer cycles</p>
+    </div>
+
+    <p>A nuance worth knowing: <code>OpenTimer2</code> takes the <em>period register</em> value, and the timer counts <code>0</code> through <code>PR2</code> inclusive &mdash; that is <code>PR2 + 1</code> cycles. So <code>PR2 = 909</code> actually gives 910 cycles, or 43,956 Hz: about 0.1&nbsp;% low and completely inaudible. 909 is the expected answer. If you want to be pedantic, <code>PR2 = 908</code> lands on 44,004 Hz. Either is defensible &mdash; just be consistent, and use your <em>actual</em> F<sub>s</sub> when you compute DDS increments.</p>
+
+    <p>Internalize what 909 means: <strong>that is your entire ISR budget.</strong> Every sample you have ~909 CPU cycles for all the DDS, envelope, and SPI work. Plenty for integer math; nowhere near enough for <code>sin()</code> or floating point.</p>
+
+    <h4>Part 2 &mdash; three lines of code</h4>
+<pre><code><span class="cm">// 1. on, internal clock, prescaler 1:1, period 909</span>
+OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_1, <span class="num">909</span>);
+
+<span class="cm">// 2. enable the Timer2 interrupt at priority 2</span>
+ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
+
+<span class="cm">// 3. clear the interrupt flag</span>
+mT2ClearIntFlag();</code></pre>
+
+    <ul>
+      <li><code>T2_ON</code> starts it. <code>T2_SOURCE_INT</code> counts the internal peripheral clock rather than pulses on a pin. <code>T2_PS_1_1</code> is the 1:1 prescaler. <code>909</code> goes into <code>PR2</code>.</li>
+      <li><code>T2_INT_ON</code> unmasks the interrupt; <code>T2_INT_PRIOR_2</code> sets priority 2. <strong>This priority must match the <code>ipl</code> in your ISR declaration</strong> &mdash; a mismatch is a silent failure where the ISR simply never runs.</li>
+      <li>Clearing the flag before you start avoids taking a stale interrupt immediately.</li>
+    </ul>
+
+    <p>The matching ISR:</p>
+<pre><code><span class="kw">void</span> __ISR(_TIMER_2_VECTOR, ipl2 SOFT) Timer2Handler(<span class="kw">void</span>)
+{
+    mT2ClearIntFlag();     <span class="cm">// clear it FIRST, always</span>
+    <span class="cm">// accumulate phase, look up sine, apply envelope,</span>
+    <span class="cm">// then write the sample out over SPI to the DAC</span>
+}</code></pre>
+    <p>Note <code>ipl2</code> matching <code>T2_INT_PRIOR_2</code>. Higher number means more urgent; priority 2 sits comfortably above the ProtoThreads Timer 1 tick.</p>
+  </section>
+
+  <!-- ============ Q4 ============ -->
+  <section id="q4">
+    <div class="qhead">
+      <span class="qnum">Q4</span>
+      <h3 class="qtitle">DDS frequency resolution</h3>
+    </div>
+
+    <p>The accumulator is 32 bits, so the smallest change you can make to the increment is 1. Rearranging the DDS equation:</p>
+    <div class="formula">&Delta;f = F<sub>s</sub> / 2<sup>32</sup> = 44,000 / 4,294,967,296</div>
+
+    <div class="answer">
+      <span class="lab">Answer</span>
+      <p class="big">1.02 &times; 10<sup>&minus;5</sup> Hz &mdash; about 10 microhertz</p>
+      <p style="margin-top:.4rem;color:var(--ink-2);font-size:.92rem">Using the true 43,956 Hz sample rate: 1.023 &times; 10<sup>&minus;5</sup> Hz. Same answer.</p>
+    </div>
+
+    <p><strong>What this means intuitively:</strong> the resolution is absurdly, uselessly fine &mdash; you could specify a frequency to five decimal places. That is the whole beauty of DDS. Your sine table is only 256 entries, a coarse approximation, but your <em>frequency</em> control is essentially continuous, because the precision lives in the accumulator's low 24 bits rather than in the table.</p>
+    <p>At 10 &micro;Hz resolution, two oscillators one step apart would take over a day to drift a full cycle out of phase. For birdsong you will be sweeping across hundreds or thousands of Hz, so you have far more resolution than you need &mdash; which is exactly what makes the chirp glide smoothly. Nudge the increment by a tiny amount each sample and you hear a continuous sweep with no stepping.</p>
+
+    <div class="warn">
+      <span class="lab">One footnote</span>
+      <p>The question says use an <code>int</code>, which is <strong>signed</strong> 32-bit. Signed overflow is undefined behavior in C, and it complicates your table-index math. Use <code>unsigned int</code> (and <code>volatile</code> if the ISR shares it) so the wraparound is well defined. The resolution is F<sub>s</sub>/2<sup>32</sup> either way.</p>
+    </div>
+  </section>
+
+  <!-- ============ Q5 ============ -->
+  <section id="q5">
+    <div class="qhead">
+      <span class="qnum">Q5</span>
+      <h3 class="qtitle">Alternatives to a linear ramp</h3>
+    </div>
+
+    <p>First, why you need an envelope at all. Switch a sine wave on and off instantly and the discontinuity produces a broadband <strong>click</strong> &mdash; a step function has energy at every frequency. It pops, and it sounds nothing like a bird. An envelope is just an amplitude multiplier: <code>output = envelope * sine_value</code>.</p>
+    <p>The governing principle: <strong>the smoother the envelope, the less spectral splatter.</strong> A hard gate is discontinuous in the signal itself &mdash; worst. A linear ramp is continuous but has a <em>corner</em>, a discontinuity in the slope, which still splatters, just less. Envelopes with smooth derivatives splatter least.</p>
+
+    <p class="sub">Exponential &mdash; one-pole IIR</p>
+<pre><code>amp = amp + ((target - amp) &gt;&gt; k);   <span class="cm">// one shift, no multiply</span></code></pre>
+    <ul>
+      <li>Extremely cheap: a subtract and a shift. No table, no state machine.</li>
+      <li>Sounds the most natural &mdash; physical resonators (a plucked string, a bell, a bird's syrinx) decay exponentially.</li>
+      <li>No slope corner at the start of the decay.</li>
+      <li><em>But</em> it is asymptotic: it approaches the target without reaching it, so you need a threshold for "close enough to zero" or a faint tone lingers.</li>
+      <li><em>And</em> rise time is not a direct parameter &mdash; you tune <code>k</code> and measure, and as a shift you only get power-of-two time constants.</li>
+    </ul>
+
+    <p class="sub">Raised cosine &mdash; Hann window</p>
+    <p><code>env = 0.5 &times; (1 &minus; cos(&pi;t/T))</code></p>
+    <ul>
+      <li>The best-sounding option: slope is <em>zero</em> at both endpoints, so there is no corner at all and minimal splatter. Cleanest possible attack and release.</li>
+      <li><em>But</em> it needs a cosine table (memory) or a second accumulator to scan it, plus a multiply per sample.</li>
+      <li>Nice trick: scan a cosine table with a <em>second</em> phase accumulator &mdash; the same DDS technique &mdash; and one fixed table gives you any envelope duration.</li>
+    </ul>
+
+    <p class="sub">ADSR &mdash; piecewise linear</p>
+    <ul>
+      <li>Far more expressive than one ramp: a percussive attack with a long tail is much closer to real birdsong structure.</li>
+      <li>Still just integer adds, so nearly as cheap as a plain ramp.</li>
+      <li><em>But</em> it is a state machine with counters and per-stage rates &mdash; more code, more to debug.</li>
+      <li><em>And</em> it still has corners at every stage boundary, though mid-note they are far less audible.</li>
+    </ul>
+
+    <p class="sub">Gaussian</p>
+    <ul>
+      <li>The optimal time&ndash;frequency tradeoff &mdash; minimum time-bandwidth product, so it is the least smeared in frequency. A genuinely good model for natural chirps.</li>
+      <li><em>But</em> it has infinite support, so truncating reintroduces a small discontinuity.</li>
+      <li><em>And</em> it is expensive &mdash; realistically you would table it, at which point a raised cosine is simpler.</li>
+    </ul>
+
+    <p class="sub">Arbitrary table lookup</p>
+    <ul>
+      <li>Total control: trace the envelope off a real cardinal spectrogram and reproduce it exactly. One lookup per sample.</li>
+      <li>With a DDS-style accumulator indexing it, one table serves any duration.</li>
+      <li><em>But</em> it costs memory, and you generate the table offline.</li>
+    </ul>
+
+    <p class="sub">No envelope &mdash; the baseline you are avoiding</p>
+    <ul>
+      <li>Free, and audibly wrong: a click on every note plus broadband noise.</li>
+    </ul>
+
+    <div class="answer">
+      <span class="lab">Practical recommendation</span>
+      <p>The linear ramp is recommended because it is cheap and good enough &mdash; a corner in the slope is far less objectionable than a step in amplitude. For the biggest improvement per line of code, switch the decay to <strong>exponential</strong>: one shift per sample and the notes stop sounding synthetic. If you are chasing polish, a <strong>raised-cosine attack with an exponential decay</strong> is the combination that sounds best.</p>
+    </div>
+  </section>
+
+  <!-- ============ TRAPS ============ -->
+  <section id="traps">
+    <div class="qhead">
+      <span class="qnum">LAB</span>
+      <h3 class="qtitle">Three things most likely to bite you</h3>
+    </div>
+
+    <div class="traps">
+      <div class="trap">
+        <span class="n">01</span>
+        <div>
+          <p><b>Missing <code>static</code> in a thread.</b></p>
+          <p>Any local variable in a ProtoThread that must survive a yield has to be <code>static</code>. Non-static locals are garbage after the thread resumes.</p>
+        </div>
+      </div>
+      <div class="trap">
+        <span class="n">02</span>
+        <div>
+          <p><b>Missing <code>volatile</code> on an ISR-shared variable.</b></p>
+          <p>If main code reads something the ISR writes, mark it <code>volatile</code> or the compiler caches it in a register and never sees the change. You will chase a phantom bug for an hour.</p>
+        </div>
+      </div>
+      <div class="trap">
+        <span class="n">03</span>
+        <div>
+          <p><b>Interrupt priority mismatch.</b></p>
+          <p><code>T2_INT_PRIOR_2</code> must match <code>ipl2</code> in the <code>__ISR</code> declaration. Otherwise the ISR silently never fires &mdash; no error, no warning, no sound.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Sources checked directly: PIC32MX1XX/2XX datasheet DS61168E, Absolute Maximum Ratings p.243 &middot;
+    ECE 4760 ProtoThreads on PIC32 page &middot; Lab 1 Birdsong + Keypad page.<br>
+    Verify the timer answer against your own copy of the header: <code>grep -n "OpenTimer" pt_cornell_1_3_2.h</code>
+  </footer>
+
+</div>
+
+</body></html>

@@ -1,0 +1,377 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Birdsong Fix Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --paper:#F3F3F0; --paper-2:#E9EAE5; --paper-3:#DEE0DA;
+  --rule:#D0D3CC; --rule-hard:#B5BAB2;
+  --ink:#17191B; --ink-2:#494F52; --ink-3:#6F7679;
+  --accent:#B02B28; --accent-ink:#8E211F; --accent-soft:#F2E0DD;
+  --was:#9B3A34; --was-soft:#F5E2E0;
+  --now:#3F6B35; --now-soft:#E2EDDC;
+  --signal:#1D5C68; --signal-ink:#164A54; --signal-soft:#DCE9EA;
+  --warn:#8A6206; --warn-soft:#F3E8CC;
+  --code-bg:#EAEBE6;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#121517; --paper-2:#1A1E21; --paper-3:#232829;
+  --rule:#2B3134; --rule-hard:#3C4448;
+  --ink:#E9EAE6; --ink-2:#ABB2B4; --ink-3:#7D8688;
+  --accent:#E8726A; --accent-ink:#F0938C; --accent-soft:#331E1D;
+  --was:#E08A82; --was-soft:#2E1B19;
+  --now:#8FBF7E; --now-soft:#1B2718;
+  --signal:#68C0CC; --signal-ink:#8AD2DC; --signal-soft:#10282D;
+  --warn:#D8AC57; --warn-soft:#2E2611;
+  --code-bg:#171B1E;
+}}
+:root[data-theme="dark"]{
+  --paper:#121517; --paper-2:#1A1E21; --paper-3:#232829;
+  --rule:#2B3134; --rule-hard:#3C4448;
+  --ink:#E9EAE6; --ink-2:#ABB2B4; --ink-3:#7D8688;
+  --accent:#E8726A; --accent-ink:#F0938C; --accent-soft:#331E1D;
+  --was:#E08A82; --was-soft:#2E1B19;
+  --now:#8FBF7E; --now-soft:#1B2718;
+  --signal:#68C0CC; --signal-ink:#8AD2DC; --signal-soft:#10282D;
+  --warn:#D8AC57; --warn-soft:#2E2611;
+  --code-bg:#171B1E;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);
+  font-family:"Source Serif 4",Georgia,serif;font-size:16.5px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-wrap:break-word;margin:0}
+h1,h2,h3,h4{font-family:"Archivo","Helvetica Neue",Arial,sans-serif}
+code,kbd,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+code{overflow-wrap:anywhere}
+
+.wrap{max-width:860px;margin:0 auto;padding:0 20px 90px}
+header.top{border-bottom:1px solid var(--rule);padding:28px 0 20px}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+h1{font-size:clamp(27px,4.4vw,40px);font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.06}
+.sub{color:var(--ink-2);margin:12px 0 0;max-width:62ch}
+.stats{display:flex;flex-wrap:wrap;gap:10px 30px;margin-top:20px;
+  font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+.stats b{display:block;color:var(--ink);font-weight:500;font-size:15px;
+  font-variant-numeric:tabular-nums;letter-spacing:0}
+
+h2{font-size:22px;font-weight:700;letter-spacing:-.015em;margin:52px 0 6px;
+  padding-bottom:8px;border-bottom:1px solid var(--rule)}
+p{margin:0 0 12px;max-width:66ch}
+ul,ol{max-width:66ch;padding-left:20px;margin:0 0 14px}
+li{margin-bottom:6px}
+a{color:var(--signal-ink);text-decoration:underline;text-underline-offset:2px}
+a:hover{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.tscroll{overflow-x:auto;margin:0 0 18px;border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:420px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{font-family:"Archivo",sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-2);background:var(--paper-2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.m,th.m{font-family:"JetBrains Mono",monospace;font-size:12.5px;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover{background:var(--paper-2)}
+
+.tag{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;padding:2px 7px;border-radius:2px;font-weight:500;white-space:nowrap}
+.t-crit{color:#fff;background:var(--accent)}
+:root[data-theme="dark"] .t-crit,:root:not([data-theme="light"]) .t-crit{color:#1A0E0D}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]) .t-crit{color:#fff}}
+.t-spec{color:var(--warn);background:var(--warn-soft)}
+.t-snd{color:var(--signal-ink);background:var(--signal-soft)}
+.t-tidy{color:var(--ink-2);background:var(--paper-3)}
+
+.fix{border-top:1px solid var(--rule-hard);padding:24px 0 6px}
+.fix h3{font-size:17px;font-weight:600;margin:0 0 4px;display:flex;gap:10px;
+  align-items:baseline;flex-wrap:wrap}
+.fix .where{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--ink-3);
+  margin:0 0 12px;letter-spacing:.01em}
+.fix .n{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--accent);font-weight:700}
+
+.ba{display:grid;gap:10px;margin:12px 0 4px}
+.ba pre{margin:0;padding:11px 13px;font-size:12.5px;line-height:1.5;overflow-x:auto;
+  border:1px solid var(--rule);background:var(--code-bg)}
+.ba .was{border-left:3px solid var(--was);background:var(--was-soft)}
+.ba .now{border-left:3px solid var(--now);background:var(--now-soft)}
+.ba .lab{font-family:"Archivo",sans-serif;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;display:block;margin-bottom:5px;font-weight:600}
+.ba .was .lab{color:var(--was)}
+.ba .now .lab{color:var(--now)}
+.cm{color:var(--ink-3)}
+
+.note{padding:13px 16px;margin:16px 0;font-size:15px;
+  border-left:2px solid var(--signal);background:var(--signal-soft)}
+.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.note p{margin:0;max-width:none}
+.note p+p{margin-top:8px}
+.note .nt{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;display:block;margin-bottom:4px;color:var(--ink-2)}
+.note.warn .nt{color:var(--warn)}
+
+pre.plain{background:var(--code-bg);border:1px solid var(--rule);border-left:2px solid var(--signal);
+  padding:13px 15px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:0 0 14px}
+ol.check{list-style:none;padding:0;counter-reset:c}
+ol.check li{counter-increment:c;display:grid;grid-template-columns:26px 1fr;gap:10px;
+  padding:9px 0;border-top:1px solid var(--rule);margin:0}
+ol.check li::before{content:counter(c);font-family:"JetBrains Mono",monospace;
+  font-size:12px;font-weight:700;color:var(--accent)}
+footer{margin-top:56px;border-top:1px solid var(--rule);padding-top:16px;
+  font-size:13px;color:var(--ink-3);max-width:66ch}
+@media(max-width:620px){
+  .wrap{padding:0 14px 60px}
+  h2{font-size:19px}
+  .ba pre{font-size:11.5px}
+  table{min-width:340px;font-size:13px}
+}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">ECE 4760 &middot; Lab 1 &middot; Lab1_Birdsong/dactest.c</div>
+  <h1>Birdsong Fix Log</h1>
+  <p class="sub">Everything that changed between the version you first pasted and what is on <code>main</code> now &mdash; what was wrong, where it was, and what it does instead.</p>
+  <div class="stats">
+    <div><span>Lines changed</span><b>+70 &minus;62</b></div>
+    <div><span>Fixes</span><b>12</b></div>
+    <div><span>Commits</span><b>3</b></div>
+    <div><span>RAM used</span><b>184 KB &rarr; 24 KB</b></div>
+  </div>
+</header>
+
+<h2>At a glance</h2>
+<div class="tscroll"><table>
+  <thead><tr><th class="m">#</th><th>What was wrong</th><th class="m">Was at</th><th>Kind</th></tr></thead>
+  <tbody>
+    <tr><td class="m">1</td><td><code>recorded[]</code> was a non-static local in a protothread</td><td class="m">line 232</td><td><span class="tag t-crit">breaks it</span></td></tr>
+    <tr><td class="m">2</td><td>Arrays sized <code>[9]</code> but keys run 1&ndash;9</td><td class="m">line 78</td><td><span class="tag t-crit">breaks it</span></td></tr>
+    <tr><td class="m">3</td><td>No mode gate &mdash; slider fought playback</td><td class="m">line 146</td><td><span class="tag t-crit">breaks it</span></td></tr>
+    <tr><td class="m">4</td><td>Key <kbd>0</kbd> had no case; board booted silent</td><td class="m">line 53</td><td><span class="tag t-spec">checkpoint</span></td></tr>
+    <tr><td class="m">5</td><td>Pitch range topped out at 4095&nbsp;Hz</td><td class="m">line 146</td><td><span class="tag t-spec">checkpoint</span></td></tr>
+    <tr><td class="m">6</td><td>The pot&#8594;pitch conversion existed twice</td><td class="m">146, 198</td><td><span class="tag t-crit">trap</span></td></tr>
+    <tr><td class="m">7</td><td>Muting sent 0, not mid-scale</td><td class="m">line 111</td><td><span class="tag t-snd">audible</span></td></tr>
+    <tr><td class="m">8</td><td>Entering record mode erased all nine recordings</td><td class="m">line 286</td><td><span class="tag t-crit">breaks it</span></td></tr>
+    <tr><td class="m">9</td><td>Playback could not be interrupted</td><td class="m">line 198</td><td><span class="tag t-snd">behaviour</span></td></tr>
+    <tr><td class="m">10</td><td>Two threads owned GPIO 25</td><td class="m">141, 236</td><td><span class="tag t-tidy">hygiene</span></td></tr>
+    <tr><td class="m">11</td><td><code>MAX_SAMPLES</code> was 100 seconds per key</td><td class="m">line 79</td><td><span class="tag t-tidy">memory</span></td></tr>
+    <tr><td class="m">12</td><td>Four comments stated the opposite of the code</td><td class="m">various</td><td><span class="tag t-spec">report</span></td></tr>
+  </tbody>
+</table></div>
+
+<h2>The fixes</h2>
+
+<div class="fix">
+  <h3><span class="n">01</span> <code>recorded[]</code> lost its contents on every yield</h3>
+  <p class="where">was: protothread_core_0, line 232 &nbsp;&rarr;&nbsp; now: file scope, line 92</p>
+  <p>Protothreads resume by jumping into a <code>switch</code>. The header does this:</p>
+  <pre class="plain"><code>#define LC_RESUME(s)  switch(s) { case 0:
+#define LC_SET(s)     s = __LINE__; case __LINE__:</code></pre>
+  <p>So on every resume, control lands on a <code>case</code> label <em>past</em> that declaration &mdash; its initialiser never runs again &mdash; and non-static locals sit on a stack the other threads reuse. The flags held whatever happened to be there.</p>
+  <p><b>What you saw:</b> record and play behaving randomly. <code>if (!recorded[record_key])</code> was a coin flip.</p>
+  <div class="ba">
+    <pre class="was"><span class="lab">was</span><code>static int possible_key;
+bool recorded[9] = {false};   <span class="cm">// inside the thread</span></code></pre>
+    <pre class="now"><span class="lab">now</span><code><span class="cm">// at file scope, beside record_length</span>
+<span class="cm">// (later removed entirely - see fix 08)</span></code></pre>
+  </div>
+</div>
+
+<div class="fix">
+  <h3><span class="n">02</span> Key 9 wrote past the end of every array</h3>
+  <p class="where">was: line 78 &nbsp;&rarr;&nbsp; now: line 87</p>
+  <p><code>record_key</code> takes the key number directly, so it ranges 1&ndash;9. Arrays of size 9 have valid indices 0&ndash;8. Pressing key&nbsp;9 wrote one element past the end of <code>recordings</code>, <code>record_length</code> and <code>recorded</code> &mdash; into whatever variable happened to sit next in memory.</p>
+  <p><b>What you saw:</b> nothing, until unrelated variables started changing on their own.</p>
+  <div class="ba">
+    <pre class="was"><span class="lab">was</span><code>#define NUM_RECORD_KEYS 9   <span class="cm">// indices 0..8</span></code></pre>
+    <pre class="now"><span class="lab">now</span><code><span class="cm">// Keys are numbered 1-9, so index N holds key N
+// and slot 0 is simply unused.</span>
+#define NUM_RECORD_KEYS 10</code></pre>
+  </div>
+  <p>Subtracting one everywhere works too. Wasting slot 0 means no subtraction exists to get wrong later.</p>
+</div>
+
+<div class="fix">
+  <h3><span class="n">03</span> The slider overwrote playback 100 times a second</h3>
+  <p class="where">protothread_toggle25, line 146 &nbsp;&rarr;&nbsp; line 160</p>
+  <p>The ADC thread set the pitch on every pass, unconditionally. The playback thread set it too, at the same 100&nbsp;Hz. Whichever ran last won.</p>
+  <p><b>What you saw:</b> playback that sounded like a fight between the recording and your finger.</p>
+  <div class="ba">
+    <pre class="was"><span class="lab">was</span><code>phase_incr_main = (adc_val*two32)/Fs ;</code></pre>
+    <pre class="now"><span class="lab">now</span><code>if (!playing) {
+    phase_incr_main = adc_to_phase_incr(adc_val) ;
+}</code></pre>
+  </div>
+  <p>The ADC <em>read</em> stays unconditional &mdash; recording needs it. Only the write is gated.</p>
+</div>
+
+<div class="fix">
+  <h3><span class="n">04</span> Key 0 did nothing, and the board booted silent</h3>
+  <p class="where">line 53 and the key switch &nbsp;&rarr;&nbsp; lines 51, 291</p>
+  <p>There was no <code>possible_key == 0</code> case at all, and <code>tone</code> started <code>false</code>. The spec says the system boots in tone generator mode and key&nbsp;0 silences it.</p>
+  <div class="ba">
+    <pre class="was"><span class="lab">was</span><code>volatile bool tone = false;
+<span class="cm">// ...and no case for key 0 anywhere</span></code></pre>
+    <pre class="now"><span class="lab">now</span><code>volatile bool tone = true;
+
+if (possible_key == 0){
+    tone = !tone ;
+    printf("tone %s\n", tone ? "on" : "off") ;
+}</code></pre>
+  </div>
+</div>
+
+<div class="fix">
+  <h3><span class="n">05</span> The slider only reached 4095 Hz</h3>
+  <p class="where">lines 146 and 198 &nbsp;&rarr;&nbsp; line 79</p>
+  <p>The raw ADC reading went straight into the frequency slot, so the pot reading <em>was</em> the pitch in hertz &mdash; capped at 4095. The checkpoint asks for 0&ndash;10&nbsp;kHz, and a cardinal reaches 7&nbsp;kHz, so the top of the sweep was unreachable.</p>
+  <div class="ba">
+    <pre class="now"><span class="lab">now</span><code>#define MAX_FREQ_HZ 10000.0f
+static inline unsigned int adc_to_phase_incr(unsigned int adc) {
+    float freq = ((float)adc * MAX_FREQ_HZ) / 4095.0f ;
+    return (unsigned int)(((double)freq * two32) / Fs) ;
+}</code></pre>
+  </div>
+  <p>At the top of travel: <code>adc 4095 &rarr; 10000.0 Hz &rarr; increment 858,993,459</code>. Comfortably inside a 32-bit value, and well under the 25&nbsp;kHz Nyquist limit.</p>
+</div>
+
+<div class="fix">
+  <h3><span class="n">06</span> The conversion existed in two places</h3>
+  <p class="where">protothread_toggle25 and protothread_playback</p>
+  <p>Recording and playback each did their own arithmetic. Fixing the range in one and not the other would have played every recording back at a different pitch than it was recorded at &mdash; a bug that looks like the storage is corrupted.</p>
+  <p>Both now call <code>adc_to_phase_incr()</code>. One definition, so they cannot drift.</p>
+</div>
+
+<div class="fix">
+  <h3><span class="n">07</span> Muting dropped the output to zero</h3>
+  <p class="where">alarm_irq, line 111 &nbsp;&rarr;&nbsp; line 125</p>
+  <p>The comment said mid-scale; the code sent a data field of zero, so the DAC went to 0&nbsp;V. Your wave is centred on 2048, so muting was a full-scale step rather than stopping where the signal already sat.</p>
+  <div class="ba">
+    <pre class="was"><span class="lab">was</span><code><span class="cm">// If tone is off, output midscale</span>
+DAC_data = (DAC_config_chan_B) ;      <span class="cm">// = 0 volts</span></code></pre>
+    <pre class="now"><span class="lab">now</span><code>DAC_data = (DAC_config_chan_B | 2048) ;</code></pre>
+  </div>
+  <p><b>What you heard:</b> a loud pop on every mute. Now it just stops.</p>
+</div>
+
+<div class="fix">
+  <h3><span class="n">08</span> Entering record mode erased all nine recordings</h3>
+  <p class="where">line 286 &nbsp;&rarr;&nbsp; removed; logic rewritten at line 300</p>
+  <p>Pressing <kbd>*</kbd> cleared every <code>recorded[]</code> flag. Combined with keys 1&ndash;9 only working while record mode was on, you could only ever play back what you had recorded in the current session &mdash; and Compose Mode in week 3 needs the nine slots to persist.</p>
+  <p>Along with the restructure, <code>recorded[]</code> was dropped entirely: <code>record_length[key] &gt; 0</code> already says whether a key holds a recording, and one source of truth cannot fall out of step with itself.</p>
+  <div class="ba">
+    <pre class="was"><span class="lab">was</span><code><span class="cm">// on entering record mode:</span>
+for (int k = 0; k &lt; 9; k++) {
+    recorded[k] = false;      <span class="cm">// wipes all nine</span>
+}</code></pre>
+    <pre class="now"><span class="lab">now</span><code><span class="cm">// * arms recording for the next key. It erases nothing.</span>
+record_mode = !record_mode ;
+
+<span class="cm">// a key is "recorded" if it has length:</span>
+} else if (record_length[record_key] &gt; 0) {</code></pre>
+  </div>
+  <div class="note warn">
+    <span class="nt">This one is a design change, not just a bug fix</span>
+    <p><kbd>*</kbd> now <b>arms</b> recording for one key and auto-disarms on release, and keys 1&ndash;9 <b>play back in normal mode</b> without entering any mode. That matches the lab spec and Hunter&rsquo;s forum answer about pressing <kbd>*</kbd> between each note.</p>
+    <p>Your original design &mdash; <kbd>*</kbd> toggles a mode, first press records, second press plays &mdash; is preserved at commit <code>ca9cdfb</code>. <code>git revert 42adcbb</code> restores it while keeping fixes 01&ndash;04.</p>
+  </div>
+</div>
+
+<div class="fix">
+  <h3><span class="n">09</span> Playback ran to the end no matter what</h3>
+  <p class="where">protothread_playback, line 198 &nbsp;&rarr;&nbsp; line 196</p>
+  <p>The loop never re-checked its own flag, so nothing could stop it. It also read <code>record_key</code> live, so pressing another key mid-playback changed the loop bound underneath it.</p>
+  <div class="ba">
+    <pre class="was"><span class="lab">was</span><code>for (sample = 0;
+     sample &lt; record_length[record_key];
+     sample++) {</code></pre>
+    <pre class="now"><span class="lab">now</span><code>play_key = record_key;   <span class="cm">// latch it</span>
+
+for (sample = 0;
+     playing &amp;&amp; sample &lt; record_length[play_key];
+     sample++) {</code></pre>
+  </div>
+</div>
+
+<div class="fix">
+  <h3><span class="n">10</span> Two threads toggled the same LED</h3>
+  <p class="where">lines 141 and 236 &nbsp;&rarr;&nbsp; one owner</p>
+  <p>The ADC thread flipped GPIO&nbsp;25 every 10&nbsp;ms and the keypad thread flipped it every 30&nbsp;ms. The flips interleaved, so the blink meant nothing &mdash; and a dead keypad thread would still have looked alive.</p>
+  <p>The keypad thread now owns it alone, and the duplicate <code>#define LED 25</code> beside <code>LED_PIN</code> is gone. A steady blink now honestly means that thread is still being scheduled.</p>
+</div>
+
+<div class="fix">
+  <h3><span class="n">11</span> 100 seconds of recording per key</h3>
+  <p class="where">line 79 &nbsp;&rarr;&nbsp; line 88</p>
+  <p><code>MAX_SAMPLES 10000</code> at 100&nbsp;Hz is 100 seconds per key. You will never record more than a few seconds, and at 8&ndash;10&times; playback a three-second gesture becomes a 0.3-second chirp.</p>
+  <div class="ba">
+    <pre class="was"><span class="lab">was</span><code>#define MAX_SAMPLES 10000     <span class="cm">// 176 KB of arrays</span></code></pre>
+    <pre class="now"><span class="lab">now</span><code>#define MAX_SAMPLES 1000      <span class="cm">// 1000 / 100 Hz = 10 seconds per key</span></code></pre>
+  </div>
+  <p>Total RAM went from <b>184 KB to 24 KB</b> of the RP2350&rsquo;s 520&nbsp;KB.</p>
+</div>
+
+<div class="fix">
+  <h3><span class="n">12</span> Comments that said the opposite of the code</h3>
+  <p class="where">throughout</p>
+  <p>The report is graded on a heavily commented listing, and a wrong comment is worse than none &mdash; it is what you will believe at 2&nbsp;a.m. instead of reading the line.</p>
+  <div class="tscroll"><table>
+    <thead><tr><th>Said</th><th>Actually does</th></tr></thead>
+    <tbody>
+      <tr><td class="m">// Set a row high</td><td>Drives one row <b>low</b> &mdash; each scancode has a single zero bit</td></tr>
+      <tr><td class="m">// Set all output pins to low</td><td>Idles all four row outputs <b>high</b></td></tr>
+      <tr><td class="m">// Turn on pulldown resistors</td><td>Calls <code>gpio_pull_up</code></td></tr>
+      <tr><td class="m">// wait for 10s</td><td>10 <b>milliseconds</b> &mdash; the thread runs at 100 Hz</td></tr>
+    </tbody>
+  </table></div>
+  <p>Also removed: the <code>printf</code> firing every 30&nbsp;ms, the unused <code>prev_key</code> and <code>keytext</code>, and includes for multicore, PIO and DMA that nothing used.</p>
+</div>
+
+<h2>The pattern behind most of them</h2>
+<p>Five of the twelve are the same mistake in different clothes: <b>the same fact stored in two places.</b></p>
+<ul>
+  <li>Two copies of the pot&#8594;pitch conversion</li>
+  <li>A <code>recorded[]</code> flag beside the length that already implied it</li>
+  <li>Two threads writing one pitch variable</li>
+  <li>Two threads owning one LED</li>
+  <li>Comments disagreeing with the code they sit above</li>
+</ul>
+<p>Whenever you notice you are keeping a second copy of something the program already knows, expect the two to drift apart. Prefer deriving it to storing it again.</p>
+
+<h2>Commits</h2>
+<div class="tscroll"><table>
+  <thead><tr><th class="m">Commit</th><th>What it did</th><th class="m">Diff</th></tr></thead>
+  <tbody>
+    <tr><td class="m">ca9cdfb</td><td>Your in-lab work, exactly as written &mdash; the baseline</td><td class="m">&mdash;</td></tr>
+    <tr><td class="m">8f8cfce</td><td>Fixes 01 and 02, the two memory bugs</td><td class="m">+10 &minus;3</td></tr>
+    <tr><td class="m">b44499f</td><td>Fixes 03 and 04, mode gate and key 0</td><td class="m">+15 &minus;4</td></tr>
+    <tr><td class="m">42adcbb</td><td>Fixes 05&ndash;12, plus the record-mode restructure</td><td class="m">+52 &minus;62</td></tr>
+  </tbody>
+</table></div>
+<p>Each is reversible on its own. <code>git revert 42adcbb</code> restores your record-mode design while keeping the four earlier bug fixes.</p>
+<pre class="plain"><code>git log --oneline Lab1_Birdsong/dactest.c
+git diff ca9cdfb 42adcbb -- Lab1_Birdsong/dactest.c   <span class="cm"># the whole change</span></code></pre>
+
+<h2>Test it at the bench</h2>
+<ol class="check">
+  <li>Power on &mdash; a tone should be audible immediately, slider controls pitch. <i>(fix 04)</i></li>
+  <li>Slider at the top reads <b>10 kHz</b> on the scope. The wave looks steppy there; that is 5 samples per cycle, not a fault. <i>(fix 05)</i></li>
+  <li>Press <kbd>0</kbd> &rarr; silence, with no pop. Again &rarr; back. <i>(fixes 04, 07)</i></li>
+  <li>Tap <kbd>*</kbd>, hold <kbd>3</kbd> and sweep the slider, release. Serial prints the sample count.</li>
+  <li>Press <kbd>3</kbd> with no <kbd>*</kbd> first &rarr; it plays back. <i>(fix 08)</i></li>
+  <li>Move the slider <em>during</em> playback &rarr; nothing should change. <i>(fix 03)</i></li>
+  <li>Record <kbd>7</kbd> as well, then play <kbd>3</kbd> again &mdash; still there. <i>(fix 08)</i></li>
+  <li>Press key <kbd>9</kbd> specifically, record and play it. <i>(fix 02)</i></li>
+  <li>Press an unrecorded key &rarr; serial prints &ldquo;key N is empty&rdquo;.</li>
+  <li>Scope GPIO 2 &mdash; pulse width is ISR time, gap should be 20&nbsp;&micro;s. Write both into the notebook.</li>
+</ol>
+
+<footer>
+  <p>Generated from the actual git history of <code>ninaa26/ece4760</code>. Line numbers marked &ldquo;was&rdquo; refer to commit <code>ca9cdfb</code>; &ldquo;now&rdquo; refers to <code>42adcbb</code>. Every commit carries a <code>Co-Authored-By</code> trailer, so <code>git log</code> is already a record of which changes came from AI assistance &mdash; most of what the report&rsquo;s prompt log asks for.</p>
+</footer>
+
+</div>
+
+</body></html>
