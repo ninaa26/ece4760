@@ -19,8 +19,37 @@ ece4760/
 │   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
 │   └── figures/            scope traces and photos for the report
 ├── build.sh                cmake/ninja wrapper — build tooling, not lab code
+├── tools/
+│   └── birdcall-spectrogram/   the bench half of Lab 1 — see below
+├── docs/                   field guide, prep and fix log, recovered from Artifacts
 └── README.md
 ```
+
+## tools/birdcall-spectrogram
+
+The measurement half of Lab 1, moved here from `One_Off_Projects` on
+2026-09-21. It was always part of this course; it had just been filed
+elsewhere.
+
+    MCU DAC --(audio)--> laptop input --> live scrolling spectrogram --> PNG + WAV
+
+- `live.py` — plug in, run, watch. Freeze and press **S** to save a PNG + WAV.
+  This is the one you want at the bench.
+- `birdsong.py` — offline: device list, level meter, fixed-length record, and a
+  higher-quality re-render of any saved WAV for the figure that goes in the report.
+- `Live Spectrogram.command` — double-clickable launcher.
+- `captures/` — three real captures from 11 Sep plus a `selftest_swoop` pair.
+
+Installed against the system `python3` (numpy, scipy, matplotlib, sounddevice).
+
+## A note on the name
+
+This course is what `~/Developer/microcontrollers` used to be. That folder was
+created for it — its first session opens *"this will handle all the work for my
+microcontrollers class"* — and it sat empty after the September move while its
+372 KB of Claude Code history stayed under the old name. Folder and history were
+merged into this repo on 2026-09-21. There is no separate microcontrollers
+project.
 
 Not tracked (see `.gitignore`): `build/` output, and
 `Hunter-Adams-RP2040-Demos/` if you clone the reference demos alongside:
@@ -35,7 +64,7 @@ Not tracked (see `.gitignore`): `build/` output, and
 
 `build.sh` resolves everything relative to itself, so the clone can live anywhere.
 The only thing it needs on the machine is the Pico SDK; if `PICO_SDK_PATH` is
-unset it looks in `~/pico-sdk` and prints the clone command if it is not there.
+unset it looks in `~/Developer/pico-sdk` and prints the clone command if it is not there.
 
 ## Flash
 
@@ -101,7 +130,7 @@ To send it over the USB cable instead, add to `Lab1_Birdsong/CMakeLists.txt`:
 
 ## Environment
 
-- `PICO_SDK_PATH` — defaults to `~/pico-sdk` (SDK 2.3.0)
+- `PICO_SDK_PATH` — defaults to `~/Developer/pico-sdk` (SDK 2.3.0)
 - `PICO_TOOLCHAIN_PATH` — defaults to `~/.pico-sdk/toolchain/14_2_Rel1`
 
 Do not use Homebrew's `arm-none-eabi-gcc`: it ships without newlib and fails at

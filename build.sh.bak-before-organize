@@ -15,15 +15,15 @@ set -e
 ROOT="${0:A:h}"
 
 # Respect an existing environment (e.g. a lab machine) before falling back.
-export PICO_SDK_PATH="${PICO_SDK_PATH:-$HOME/Developer/pico-sdk}"
+export PICO_SDK_PATH="${PICO_SDK_PATH:-$HOME/pico-sdk}"
 export PICO_TOOLCHAIN_PATH="${PICO_TOOLCHAIN_PATH:-$HOME/.pico-sdk/toolchain/14_2_Rel1}"
 [[ -d "$PICO_TOOLCHAIN_PATH/bin" ]] && export PATH="$PICO_TOOLCHAIN_PATH/bin:$PATH"
 export PATH="/opt/homebrew/bin:$PATH"
 
 if [[ ! -d "$PICO_SDK_PATH" ]]; then
   echo "PICO_SDK_PATH does not exist: $PICO_SDK_PATH"
-  echo "Clone it with:  git clone -b master --depth 1 https://github.com/raspberrypi/pico-sdk.git ~/Developer/pico-sdk"
-  echo "then:           cd ~/Developer/pico-sdk && git submodule update --init --depth 1"
+  echo "Clone it with:  git clone -b master --depth 1 https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk"
+  echo "then:           cd ~/pico-sdk && git submodule update --init --depth 1"
   exit 1
 fi
 

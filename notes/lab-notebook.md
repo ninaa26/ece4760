@@ -23,7 +23,7 @@ write a number here that was not read off an instrument.
 
 | Component | Version | Location |
 | --- | --- | --- |
-| Pico C/C++ SDK | 2.3.0 | `~/pico-sdk` |
+| Pico C/C++ SDK | 2.3.0 | `~/Developer/pico-sdk` |
 | Arm GNU toolchain | 14.2.Rel1 | `~/.pico-sdk/toolchain/14_2_Rel1` |
 | CMake | 4.4.3 | Homebrew |
 | Ninja | 1.13.2 | Homebrew |
