@@ -46,6 +46,8 @@ as of 2026-09-23: all three weekly checkoffs passed; the report is what's left.
 
 ## Report
 
+See `report-guide.md` for how the professor's example reports are laid out.
+
 One report per group, submitted on Canvas. Written so that in two years you
 could rebuild the project and understand the method from the report alone.
 

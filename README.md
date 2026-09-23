@@ -23,6 +23,7 @@ ece4760/
 ├── notes/
 │   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
 │   ├── lab1-requirements.md   handout requirements and report checklist
+│   ├── report-guide.md     what the professor's example reports do, and our gaps
 │   └── figures/            scope traces and photos for the report
 ├── build.sh                cmake/ninja wrapper — build tooling, not lab code
 ├── flash.sh                build, wait for the bootloader drive, copy the .uf2
