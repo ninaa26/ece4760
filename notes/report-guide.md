@@ -80,3 +80,45 @@ three-week lab well. The cricket and reaction reports cite their sources.
 We already have more on design reasoning and debugging than either birdsong
 example. What we're missing is the measured evidence and the diagrams, which
 are exactly what their Results sections are built on.
+
+---
+
+## How the report is graded
+
+From Hunter's "Grading Lab Reports" page and the TA rubric it links
+(`General_Lab_writeup_Rubric.pdf`). The report is 40 % of the lab grade.
+
+**Objective scan.** Every required section present and non-trivial, not copied
+from the lab page, gets roughly a B. Each missing or trivial section costs half
+a letter grade. The read-through can only raise the grade from there.
+
+**Read-through.** Reports are ranked by how clearly they let a reader:
+
+1. understand the lab's objectives;
+2. rebuild the project **without the provided code**, using the same
+   development and debugging methods;
+3. do that easily;
+4. understand **why** each strategy was chosen, quantitatively where possible;
+5. evaluate a rebuilt version by the **same metrics** and get the same results.
+
+The top report gets 100 % only if it could be used as a course example as-is.
+Write for yourself in five years, rebuilding it in a day.
+
+**Rubric weights (Lab 1).**
+
+| Section | Weight | Must have |
+| --- | --- | --- |
+| Introduction | ~2 % | short, not copied from the lab page |
+| Design and testing | ~40 % | why (concept), how (implementation), testing, detail; full circuit description and **complete schematic**; **all threads, ISRs and functions**; **software setup**; state machines |
+| Documentation | ~10 % | commented code, with anything unusual explained; figures referenced in the text; **state machines and complex circuits must be drawn, on a computer**; good captions; **every external figure or fact referenced, including the lab page** |
+| Results | ~30 % | specific; explain the data and tests; qualitative (outputs, what did well or poorly, what's special); quantitative (the lab's metrics, error analysis, tables, scope readings explained, code speed) |
+| Conclusions | ~18 % | what we learned; issues and how we debugged them; improvements to our implementation and to the lab; any remaining questions answered |
+
+**What the draft does for each criterion** (`notes/report/lab1-report.html`):
+objectives in the introduction; a development-setup and debugging-tools
+section; pseudocode for the ISR and every thread; quantitative reasons for Fs,
+table size, SPI rate and storage; a "Method" line for every measurement so it
+can be repeated; numbered references cited inline; drawn schematic, block
+diagram, state machine and flowchart. Still ours to supply: measurements,
+scope and spectrogram figures, photo, conclusions in our own words, and a more
+heavily commented code listing.

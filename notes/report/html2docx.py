@@ -64,12 +64,22 @@ class P(HTMLParser):
         elif tag == "span": self.fmt.append(("todo",) if "todo" in cls else ("span",))
         elif tag == "br":
             self.emit("\n")
+        elif tag == "pre":
+            self.in_pre = True; self.prebuf = []
         elif tag == "img":
             w = float(a.get("width", "6"))
             doc.add_picture(os.path.join(base, a["src"]), width=Inches(w))
             doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
     def handle_endtag(self, tag):
         if tag == "style": self.in_style = False; return
+        if tag == "pre":
+            self.in_pre = False
+            para = doc.add_paragraph()
+            lines = "".join(self.prebuf).strip("\n").split("\n")
+            for k, line in enumerate(lines):
+                r = para.add_run(line); r.font.name = "Courier New"; r.font.size = Pt(8.5)
+                if k < len(lines) - 1: r.add_break()
+            return
         if tag in ("h1", "h2", "h3"): self.fmt.pop(); self.para = None
         elif tag in ("p", "li"): self.pclass.pop(); self.para = None
         elif tag in ("ul", "ol"): self.list_stack.pop()
@@ -101,6 +111,7 @@ class P(HTMLParser):
         if "todo" in f: r.font.highlight_color = WD_COLOR_INDEX.YELLOW
     def handle_data(self, data):
         if self.in_style: return
+        if getattr(self, "in_pre", False): self.prebuf.append(data); return
         data = " ".join(data.split()) if "\n" in data or "  " in data else data
         if data == "": return
         self.emit(data)
