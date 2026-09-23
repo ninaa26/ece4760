@@ -15,8 +15,8 @@ write a number here that was not read off an instrument.
 | Date | Work |
 | --- | --- |
 | 2026-09-04 | Toolchain built and verified; repo created; Lab 1 project started from Hunter's `a_Timer_Interrupt_DDS_Demo`. Week 1 lab session. |
-| 2026-09-10 | Week 2 work: keypad integrated, debounce state machine, record mode, playback thread. Code review, twelve bugs fixed, amplitude envelope added. |
-| 2026-09-11 | Week 3 work: compose mode, 10× playback, cardinal presets on all nine keys, playback scheduled against an absolute timebase. |
+| 2026-09-10 | Week 2 work: keypad integrated, debounce state machine, record mode, playback thread. Code review, twelve bugs fixed. |
+| 2026-09-11 | Week 3 work: compose mode, 10× playback. |
 | ___ | Weeks 1, 2 and 3 all checked off. Lab 1 now in the report stage. |
 
 ---
@@ -118,22 +118,18 @@ come out to reflash.
 | `sine_table_size` | 256 | entries, indexed by the accumulator's top 8 bits |
 | `MAX_FREQ_HZ` | 10 000.0 | top of the slider's range |
 | `NUM_RECORD_KEYS` | 10 | slot 0 unused so index N = key N |
-| `MAX_SAMPLES` | 2500 | 25 s recorded per key at 100 Hz; 2.5 s played back at 1 kHz |
-| `NOTE_GAP_US` | 50 000 | 50 ms silence between notes of a composed phrase |
-| `MAX_SEQUENCE` | 32 | notes in one composed phrase |
-| `ATTACK_TIME` | 250 | ISR ticks = 5.0 ms rise |
-| `DECAY_TIME` | 250 | ISR ticks = 5.0 ms fall |
-| `max_amplitude` | `int2fix15(1)` | full scale, 1.0 in fix15 |
+| `MAX_SAMPLES` | 1000 | 10 s recorded per key at 100 Hz; 1 s played back at 1 kHz |
+| `MAX_COMPOSE_KEYS` | 10 | keys in one composed sequence |
 | SPI baud | 20 MHz | 16-bit frames, mode 0 |
 
-Recording storage: `recordings[10][2500]` of `uint16_t` = 50 000 bytes of the
+Recording storage: `recordings[10][1000]` of `uint16_t` = 20 000 bytes of the
 RP2350's 520 KB.
 
 ### Concurrency structure
 
 | Runs | Rate | Job |
 | --- | --- | --- |
-| `alarm_irq` (ISR) | 50 000 Hz | envelope, DDS, sine lookup, SPI write |
+| `alarm_irq` (ISR) | 50 000 Hz | DDS, sine lookup, SPI write; mid-scale 2048 when the tone is off |
 | `protothread_toggle25` | 100 Hz | read pot, set pitch, append to a recording |
 | `protothread_playback` | 1 000 Hz | step a stored recording back out, 10× faster than it was recorded |
 | `protothread_core_0` | 33 Hz | scan keypad, debounce, set modes |
@@ -147,13 +143,10 @@ what the prep sheet's question 2 is pointing at.)
 
 | Key | Action |
 | --- | --- |
-| `0` | tone generator on / off; also cancels record, playback and compose |
+| `0` | tone generator on / off |
 | `*` | arm recording for the next key pressed |
 | `1`–`9` | while armed: record. While composing: add to the phrase. Otherwise: play that key back |
 | `#` | compose mode: first press starts a phrase, second press plays it |
-
-Keys 1–9 power up holding Northern Cardinal presets: 2.2 s pitch tracks of real
-recordings — songs on 1–4, a duet on 5, calls on 6–9. Recording over a key replaces its preset.
 
 Recording a swoop: tap `*`, press and hold a key, sweep the slider, release.
 Playing it: tap that key. Recordings persist until deliberately overwritten.
@@ -286,11 +279,8 @@ envelopes.
 | ISR pulse width on GPIO 2 | ___ µs | small fraction of 20 µs |
 | ISR period on GPIO 2 | ___ µs | 20.0 |
 | ISR duty cycle | ___ % | width ÷ 20 µs |
-| ISR pulse width **before** the envelope | ___ µs | baseline |
-| ISR pulse width **after** the envelope | ___ µs | wider: one 64-bit multiply added |
-| Increase from the envelope | ___ µs | this is the code-characterisation result |
-| Envelope rise time | ___ ms | 5.0 |
-| Envelope fall time | ___ ms | 5.0 |
+| ISR pulse width, tone on | ___ µs | DDS + lookup + SPI |
+| ISR pulse width, tone off | ___ µs | shorter: mid-scale write only |
 | Recording length, 2 s hold | ___ samples | ~200 at 100 Hz |
 | Keys verified working | ___ | all twelve |
 
@@ -309,7 +299,6 @@ envelopes.
 4. Added record mode and a separate playback protothread.
 5. Full code review, which found twelve defects (section 8), fixed in four
    commits.
-6. Added the amplitude envelope.
 
 ### Observations
 
@@ -425,16 +414,22 @@ changes.
 
 **Floating point outside the ISR only.** The conversion uses `float`, which is
 fine at 100 Hz in a thread. Fixed point exists so the interrupt finishes inside
-20 µs; nothing in the ISR uses floats — the envelope multiply is `multfix15`,
-which is a 64-bit integer multiply and a shift.
+20 µs; nothing in the ISR uses floats — it is an integer add, a shift, a table
+lookup and an SPI write.
 
-**A linear amplitude envelope.** A note that starts and stops instantly is a
+**Mute to mid-scale.** With the tone off the ISR writes 2048, not 0. The wave is
+centred on 2048, so stopping there avoids a jump to 0 V and its pop.
+
+**Amplitude envelope — not in the submitted code.** The report asks for a
+scope trace showing rise, sustain and fall, and the submitted code switches
+notes on and off instantly. An envelope was built only in the personal version
+(`Lab1_Birdsong_Cardinal/`). The reasoning, kept for the report's Q5: a note that starts and stops instantly is a
 step change in amplitude, and a step contains energy at every frequency: you
 hear a click, and the spectrogram shows a vertical smear across the whole band
 at each note boundary. Ramping in over 5 ms and out over 5 ms removes both.
 
-Linear was chosen because it costs one fix15 addition per sample. The
-alternatives and their trade-offs:
+A linear ramp costs one fix15 addition per sample. The alternatives and their
+trade-offs:
 
 | Envelope | Advantage | Cost |
 | --- | --- | --- |
@@ -444,12 +439,9 @@ alternatives and their trade-offs:
 | ADSR | expressive, standard in synthesis | a state machine and four parameters to tune |
 | Gaussian | most compact in frequency, least spectral smearing | table-driven, no truly flat sustain |
 
-Implementation follows the course beep-synthesis demo: `attack_inc` and
-`decay_inc` are computed once at boot with `divfix(max_amplitude,
-int2fix15(ATTACK_TIME))`, and the ISR adds or subtracts one increment per tick
-until it reaches the ceiling or zero. At zero the sine is multiplied away and
-the output sits at mid-scale 2048, which is silence — so muting no longer needs
-a special case.
+The personal version follows the course beep-synthesis demo: `attack_inc` and
+`decay_inc` are computed once at boot and the ISR adds or subtracts one per
+tick.
 
 ### Recording length
 
@@ -469,14 +461,10 @@ until the linker refused:
 | 26 000 | 260 | — | **no**, "will not fit in region" |
 
 So the hard ceiling is about four minutes per key on a 520 KB part. 1000 was
-chosen at first: a cardinal's whistle is well under a second, and at 8–10× playback a
+chosen: a cardinal's whistle is well under a second, and at 8–10× playback a
 three-second gesture becomes a 0.3-second chirp, so ten seconds per key is
 already far more than the lab can use. Sitting at 493 KB would leave almost
 nothing for the stack, and stack exhaustion does not announce itself.
-
-Raised to 2500 in week 3: at 1 kHz playback, 1000 samples is only one second,
-and a full cardinal song lasts 2–3 seconds (Cornell Lab, All About
-Birds). 2500 gives 2.5 s of playback for 50 KB.
 
 ### Record-mode behaviour
 
@@ -593,43 +581,39 @@ tables below.
 | Date | Prompts | Your words | Claude's words | Work |
 | --- | --- | --- | --- | --- |
 | 2026-09-04 | 16 | 525 | 10 495 | toolchain setup, prep questions |
-| 2026-09-10 | 46 | 5 381 | 20 606 | code review, bug fixes, envelope |
-| 2026-09-11 | 40 | 2 056 | 15 021 | compose mode, 10× playback, cardinal presets, timing |
+| 2026-09-10 | 46 | 5 381 | 20 606 | code review, bug fixes |
+| 2026-09-11 | 40 | 2 056 | 15 021 | week 3 features — not used in the submitted code |
 | 2026-09-20 | 1 | 10 | 109 | repo housekeeping |
 | 2026-09-23 | 8 | 3 982 | 2 950 | repo tidy, report prep (not code generation) |
 | **Total** | **111** | **11 954** | **49 365** | |
 
-### Code changes to `Lab1_Birdsong/birdsong.c`
+### AI code changes, and which are in the submitted code
 
-| Commit | Lines | Author | What |
-| --- | --- | --- | --- |
-| `aac577c` | +125 −0 | starter | Hunter's `a_Timer_Interrupt_DDS_Demo`, unmodified |
-| `64e7d0b` | +160 −7 | group | ADC thread, channel B, keypad scan (written in lab; committed with AI help) |
-| `ca9cdfb` | +435 −278 | group | Debounce state machine, record mode, playback thread |
-| `8f8cfce` | +10 −3 | AI | Bugs 1 and 2 |
-| `b44499f` | +15 −4 | AI | Bugs 3 and 4 |
-| `42adcbb` | +52 −62 | AI | Bugs 5–12 and the record-mode restructure |
-| `388fd74` | +10 −2 | AI | Replaced `?:` with `if`/`else` (the ternary appears nowhere in the course demos) |
-| `06214f1` | +49 −13 | AI | Amplitude envelope, fix15 macros, fix15 sine table |
-| `0e488c5` | +101 −3 | AI | **Compose mode, 10× playback (1 ms playback step), note gap**, and cardinal presets |
-| `ed8da10` | +8 −4 | AI | Presets on all nine keys; `MAX_SAMPLES` raised to 2500 |
-| `8ac6766` | +16 −1 | AI | Silence in presets drives `tone`, so the envelope ramps each syllable |
-| `de0bef8` | +26 −5 | AI | Playback scheduled against an absolute timebase so timing cannot drift |
-| `e2c39f1` | +8 −3 | AI | Print playback timing only for single key presses |
-| `603ee07` | +2 −1 | AI | Comment corrected (presets are on all nine keys) |
+`Lab1_Birdsong/birdsong.c` is the code submitted with the report. It descends
+from `42adcbb`, then the group made its own week 3 changes: the 1 ms playback
+step (10×), compose mode, and the `if`/`else` prints. Later AI commits went
+only into the personal version, `Lab1_Birdsong_Cardinal/`.
 
-`northern_cardinal.c`, `northern_cardinal.h` and `cardinal_data.h` (the
-presets) are entirely AI-written: `0e488c5`, `ed8da10`, `8ac6766`, `303be98`,
-`5a94627`. `Lab1_Birdsong_NoEnvelope/` is an AI-written measurement copy
-(`81535a0`, regenerated from the current code 2026-09-23).
+| Commit | Lines | Author | What | In submitted code? |
+| --- | --- | --- | --- | --- |
+| `aac577c` | +125 −0 | starter | Hunter's `a_Timer_Interrupt_DDS_Demo`, unmodified | yes |
+| `64e7d0b` | +160 −7 | group | ADC thread, channel B, keypad scan | yes |
+| `ca9cdfb` | +435 −278 | group | Debounce state machine, record mode, playback thread | yes |
+| `8f8cfce` | +10 −3 | AI | Bugs 1–2: static protothread state, arrays sized 10 | yes |
+| `b44499f` | +15 −4 | AI | Bugs 3–4: mode gate, tone on at boot, key 0 toggle | yes |
+| `42adcbb` | +52 −62 | AI | Bugs 5–12: `adc_to_phase_incr()`, mid-scale mute, record-mode restructure, interruptible playback, single LED owner, comment fixes | yes |
+| `388fd74` | +10 −2 | AI | `?:` → `if`/`else` | the group wrote its own `if`/`else` |
+| `06214f1` onward | — | AI | Envelope, compose mode, playback timing, presets | no |
+| (group, week 3) | — | group | 1 ms playback step, compose mode | yes |
 
-**Totals for the lab source file:**
+Only `adc_to_phase_incr()` is marked `BEGIN/END AI-GENERATED CODE` in the
+submitted file. The other AI lines in it (`8f8cfce`, `b44499f`, `42adcbb`) are
+unmarked; mark them or list them in the report.
 
-- Written by the group: **+595 −285**
-- Suggested by AI: **+136 −84** across five commits through week 2, plus
-  **+161 −17** across six commits in week 3 (table above)
-- Accepted: **all of them**
-- Rejected or reverted: **none**
+**Totals:** written by the group **+595 −285** plus the week 3 changes; AI
+changes in the submitted code **+77 −69** across three commits; all AI
+suggestions were accepted into the working tree at the time, and the later ones
+were left out of the submitted version.
 
 ### What was asked, and what came back
 
@@ -642,8 +626,8 @@ presets) are entirely AI-written: `0e488c5`, `ed8da10`, `8ac6766`, `303be98`,
 | "is there anything else to fix" | Found 3 further issues not in the first review, including the vanishing recordings | reviewed |
 | "fix all" | +52 −62, including a design change to record mode | yes |
 | "is there anything more advanced than the class" | Checked each construct against the course demo repo; `static inline` used 12 times there and `(float)` 37 times, but `?:` zero times | yes, +10 −2 |
-| "add envelope" | fix15 macros and a 5 ms linear attack/decay, following the beep demo | yes |
-| Week 3: compose mode, speed-up, cardinal presets | `0e488c5` and the preset commits above | yes |
+| "add envelope" | fix15 macros and a 5 ms linear attack/decay, following the beep demo | not in the submitted code |
+| Week 3: compose mode, speed-up | `0e488c5` | not used — the group wrote its own |
 | Explanations only, no code | Debouncing, DDS, SPI, protothreads, matrix keypads, the C syntax of `switch`/`case`, what a recording actually contains | n/a |
 
 ### Non-source changes
@@ -666,11 +650,13 @@ Copies of all four are in `docs/`.
 
 ### Scope trace: rise, sustain, fall
 
-Required by the report. The envelope makes it capturable.
+Required by the report. **The submitted code has no envelope**, so notes start
+and stop instantly: either add one before capturing, or show the trace as it
+is and explain the missing ramps.
 
 1. Probe the DAC output (pin 6, VOUTB); ground clip on any GND hole.
-2. Timebase **10–20 ms/div**. The rise is 5 ms and the fall is 5 ms, so a
-   held note of roughly 100 ms fits rise, sustain and fall on one screen.
+2. Timebase **10–20 ms/div**, so a held note of roughly 100 ms fits on one
+   screen.
 3. Vertical **0.5 V/div**, with the trace centred — the wave sits on 2048,
    which is mid-supply, not ground.
 4. Trigger on the rising edge, single-shot, then press a key. Single-shot is
@@ -694,15 +680,14 @@ figure. Its README covers getting the audio in. Alternatives:
 - The Merlin app pointed at a speaker, which also tests whether it convinces
 
 A good swoop appears as a clean line sweeping up and back down between about
-2 kHz and 7 kHz. Vertical smears at the note boundaries would mean the envelope
-is not working.
+2 kHz and 7 kHz. Without an envelope, expect vertical smears at the note
+boundaries.
 
 ### ISR timing
 
-Probe GPIO 2. Pulse width is execution time, the gap is 20 µs. Capture it both
-with and without the envelope if possible — the difference is the cost of one
-`multfix15`, and that comparison is exactly what "code characterisation" means
-in the report.
+Probe GPIO 2. Pulse width is execution time, the gap is 20 µs. Capture it with
+the tone on and with it off; the difference is the cost of the DDS step and
+table lookup.
 
 ### Code listing
 
@@ -724,9 +709,8 @@ What is left is the report.
 
 - [x] Week 1
 - [x] Week 2
-- [x] Week 3, including the demo: cardinal imitation, a TA-invented
+- [x] Week 3, including the demo: Fig. 2 imitation, a TA-invented
       sequence recorded and played back, no resets or reprogramming
-- [x] Amplitude envelope — 5 ms linear attack and decay
 - [x] `#` compose mode
 - [x] 10× playback speed (10 ms record rate, 1 ms playback rate)
 
@@ -734,8 +718,19 @@ What is left is the report.
 
 - The 10× playback speed-up is built in: recording samples every 10 ms,
   playback every 1 ms. The report should say so explicitly.
-- ISR timing has not been re-measured with the envelope in (compare
-  `Lab1_Birdsong` and `Lab1_Birdsong_NoEnvelope` on GPIO 2).
+- The submitted code has no amplitude envelope, but the report needs a scope
+  trace of rise, sustain and fall.
+- ISR timing still to measure (GPIO 2, tone on and off).
+
+### Known issues in the submitted code
+
+- **Debounce `else` misplaced.** In `MAYBE_PRESSED`, `else { state =
+  NOT_PRESSED; }` belongs to `if (i == possible_key)` but sits on the key
+  if-chain. A key read for only one scan leaves the machine in
+  `MAYBE_PRESSED`, ignoring other keys until that key is pressed again.
+- **Compose playback doesn't set `playing`,** so the ADC thread's mode gate
+  lets the slider overwrite the pitch every 10 ms during a phrase. It also
+  doesn't set `tone`, so a phrase is silent if key 0 has muted the tone.
 
 ### Report deliverables
 

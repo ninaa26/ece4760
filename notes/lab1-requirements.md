@@ -36,7 +36,7 @@ as of 2026-09-23: all three weekly checkoffs passed; the report is what's left.
 | 0 silences / restarts the tone generator | key 0 branch |
 | `*` → record mode; hold 1–9 records while held; release stops | `record_mode`, release in `MAYBE_NOT_PRESSED` |
 | Same key plays back at 8–10× speed | 10×: recorded every 10 ms, replayed every 1 ms |
-| Different sounds on each key 1–9 | `recordings[10][2500]` |
+| Different sounds on each key 1–9 | `recordings[10][1000]` |
 | `#` → compose mode; keys pressed are recorded as a sequence | `sequence[]`, `compose_mode` |
 | `#` again plays the sequence back | `playing_sequence` in the playback thread |
 | ISR timing GPIO; measure on the scope | as week 2 |
@@ -73,13 +73,13 @@ could rebuild the project and understand the method from the report alone.
 
 All are `___` in the notebook today.
 
-- **Speed:** ISR pulse width and period on GPIO 2, with and without the
-  envelope (`Lab1_Birdsong` vs `Lab1_Birdsong_NoEnvelope`); duty cycle.
+- **Speed:** ISR pulse width and period on GPIO 2, with the tone on and off;
+  duty cycle.
 - **Accuracy:** scope frequency against the intended frequency at several
-  slider positions (bottom, middle, top); peak-to-peak amplitude; envelope rise
-  and fall times against the designed 5 ms.
-- **Timing:** playback duration against the expected duration. The serial
-  output prints `played key N: S samples in T ms` for every single-key playback,
-  which gives this directly (expected T = S ms).
+  slider positions (bottom, middle, top); peak-to-peak amplitude. The submitted code
+  has no envelope, so decide how to handle the rise/sustain/fall trace.
+- **Timing:** playback duration against the expected duration. Recording
+  prints `key N: S samples` on release; the playback should last about S ms
+  (10×). Measure it on the scope.
 - **Spectrogram:** measured start/end frequency of a swoop against what the
   code was told to produce (`birdsong.py spec --track` prints this).

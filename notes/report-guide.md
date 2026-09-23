@@ -19,7 +19,7 @@ machine, and record and playback modes.
 ## The shape they share
 
 1. **Introduction.** One paragraph: the goal, the method in one sentence each
-   (DDS, envelope, keypad, modes), and what the finished system does.
+   (DDS, keypad, modes), and what the finished system does.
 2. **Design and testing**
    - **Concept.** The maths first, with numbers. Birdsong works out
      `0.130 s × 44 000 = 5720 samples`. Birdsong 2 derives the DDS equation
@@ -69,12 +69,12 @@ three-week lab well. The cricket and reaction reports cite their sources.
 | Table of functions/threads/variables | spread over notebook §3 and §8 | pull into one table |
 | Debounce state diagram | described in notebook §6 | **draw it** |
 | Testing story with named bugs | notebook §5–7 and the 12-bug log (§9), more thorough than either birdsong example | none |
-| Scope figures checked against the spec | nothing measured | **scope traces**: swoop envelope (5 ms rise and fall = 250 samples), ISR pulse |
-| Spectrogram compared with the handout's Fig. 2 | tool ready, no capture | **spectrogram** of a preset song against Fig. 2 |
-| Code speed analysis | 20 µs budget at 50 kHz, 150 MHz = 3000 cycles per interrupt; measurement missing | **ISR pulse width**, with and without the envelope |
+| Scope figures checked against the spec | nothing measured | **scope traces**: a swoop's rise, sustain and fall (the submitted code has no envelope, so decide how to handle this), ISR pulse |
+| Spectrogram compared with the handout's Fig. 2 | tool ready, no capture | **spectrogram** of our Fig. 2 imitation against Fig. 2 |
+| Code speed analysis | 20 µs budget at 50 kHz, 150 MHz = 3000 cycles per interrupt; measurement missing | **ISR pulse width**, tone on and off |
 | Anomalies explained | known one: steppy waveform near 10 kHz (5 samples per cycle), notebook §4 | none |
 | Week-by-week benchmarks | timeline (notebook §1), checkpoints (`lab1-requirements.md`) | put in the cricket-style table |
-| Unique features | absolute-timebase playback, cardinal presets from real recordings, key 0 as an escape hatch, envelope-free comparison build | none |
+| Unique features | 10× speed-up by replay rate rather than resampling; recordings persist across modes | write it up |
 | — (no AI policy then) | prompt log (notebook §11) | AI-use paragraph in Design and Testing |
 
 We already have more on design reasoning and debugging than either birdsong
