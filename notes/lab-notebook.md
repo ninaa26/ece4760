@@ -16,6 +16,7 @@ write a number here that was not read off an instrument.
 | --- | --- |
 | 2026-09-04 | Toolchain built and verified; repo created; Lab 1 project started from Hunter's `a_Timer_Interrupt_DDS_Demo`. Week 1 lab session. |
 | 2026-09-10 | Week 2 work: keypad integrated, debounce state machine, record mode, playback thread. Code review, twelve bugs fixed, amplitude envelope added. |
+| 2026-09-11 | Week 3 work: compose mode, 10× playback, cardinal presets on all nine keys, playback scheduled against an absolute timebase. |
 | ___ | Weeks 1, 2 and 3 all checked off. Lab 1 now in the report stage. |
 
 ---
@@ -117,13 +118,16 @@ come out to reflash.
 | `sine_table_size` | 256 | entries, indexed by the accumulator's top 8 bits |
 | `MAX_FREQ_HZ` | 10 000.0 | top of the slider's range |
 | `NUM_RECORD_KEYS` | 10 | slot 0 unused so index N = key N |
-| `MAX_SAMPLES` | 1000 | 10 seconds per key at 100 Hz |
+| `MAX_SAMPLES` | 2500 | 25 s recorded per key at 100 Hz; 2.5 s played back at 1 kHz |
+| `NOTE_GAP_US` | 50 000 | 50 ms silence between notes of a composed phrase |
+| `MAX_SEQUENCE` | 32 | notes in one composed phrase |
 | `ATTACK_TIME` | 250 | ISR ticks = 5.0 ms rise |
 | `DECAY_TIME` | 250 | ISR ticks = 5.0 ms fall |
 | `max_amplitude` | `int2fix15(1)` | full scale, 1.0 in fix15 |
 | SPI baud | 20 MHz | 16-bit frames, mode 0 |
 
-Build: `text 27,652 · bss 24,520` of the RP2350's 520 KB.
+Recording storage: `recordings[10][2500]` of `uint16_t` = 50 000 bytes of the
+RP2350's 520 KB.
 
 ### Concurrency structure
 
@@ -131,7 +135,7 @@ Build: `text 27,652 · bss 24,520` of the RP2350's 520 KB.
 | --- | --- | --- |
 | `alarm_irq` (ISR) | 50 000 Hz | envelope, DDS, sine lookup, SPI write |
 | `protothread_toggle25` | 100 Hz | read pot, set pitch, append to a recording |
-| `protothread_playback` | 100 Hz | step a stored recording back out |
+| `protothread_playback` | 1 000 Hz | step a stored recording back out, 10× faster than it was recorded |
 | `protothread_core_0` | 33 Hz | scan keypad, debounce, set modes |
 
 The protothreads library uses the free-running 64-bit system counter via
@@ -168,7 +172,7 @@ The slider is ignored during playback.
 | Highest output used | 10 000 Hz | 40 % of Nyquist |
 | Samples per cycle at 10 kHz | 5.0 | why the top of the range looks steppy on the scope |
 | Samples per cycle at 2 kHz | 25.0 | |
-| ISR ticks per stored pitch | 500 | 50 000 ÷ 100 — why 100 Hz storage sounds continuous |
+| ISR ticks per stored pitch | 500 recording, 50 playback | 50 000 ÷ 100 and 50 000 ÷ 1 000 — why stored pitches sound continuous |
 | SPI transfer time | 0.80 µs | 16 bits at 20 MHz = 4 % of the 20 µs budget |
 | DAC resolution | 12 bits, 0–4095 | gain 1×, so 0–2.048 V |
 | ADC resolution | 12 bits, 0–4095 | over 0–3.3 V |
@@ -187,6 +191,7 @@ report:
 | `Fs`, audio sample rate | 50 000 Hz | how often the ISR produces one sample |
 | the pitch | 0–10 000 Hz | the number stored and heard; what the pot sets |
 | recording rate | 100 Hz | how often the pot is sampled while recording |
+| playback rate | 1 000 Hz | how often a stored pitch is replayed — 10× the recording rate |
 | keypad scan rate | 33 Hz | how often the keys are read |
 
 "Store the frequency at ~100 Hz" means the *thing stored* is a pitch of a few
@@ -388,7 +393,8 @@ home directory instead of from its own location (`d5fc679`).
 **Store the pitch, not the audio.** A recording is a list of frequencies
 sampled at 100 Hz, not a waveform. Audio would be 50 000 numbers a second;
 pitches are 100 — five hundred times less. It also means playback can be sped
-up 8–10× in week 3 without the pitch rising: speeding up a list of pitches
+up without the pitch rising — the week 3 build records at 100 Hz and replays at
+1 kHz, i.e. 10×: speeding up a list of pitches
 replays the same notes faster, where speeding up audio would raise every
 frequency. The analogy is a player-piano roll rather than a tape.
 
@@ -463,10 +469,14 @@ until the linker refused:
 | 26 000 | 260 | — | **no**, "will not fit in region" |
 
 So the hard ceiling is about four minutes per key on a 520 KB part. 1000 was
-chosen: a cardinal's whistle is well under a second, and at 8–10× playback a
+chosen at first: a cardinal's whistle is well under a second, and at 8–10× playback a
 three-second gesture becomes a 0.3-second chirp, so ten seconds per key is
 already far more than the lab can use. Sitting at 493 KB would leave almost
 nothing for the stack, and stack exhaustion does not announce itself.
+
+Raised to 2500 in week 3: at 1 kHz playback, 1000 samples is only one second,
+and a full cardinal song on keys 7–9 lasts 2–3 seconds (Cornell Lab, All About
+Birds). 2500 gives 2.5 s of playback for 50 KB.
 
 ### Record-mode behaviour
 
@@ -555,7 +565,7 @@ fractional-sample phase, so accuracy is limited by the clock, not the
 arithmetic.
 
 **Q5 — alternatives to a linear ramp.**
-See the envelope table in section 7. The underlying tension: any sudden change
+See the envelope table in section 8. The underlying tension: any sudden change
 in amplitude spreads energy across all frequencies, heard as a click and seen
 as a vertical smear on the spectrogram.
 
@@ -563,8 +573,8 @@ as a vertical smear on the spectrogram.
 
 ## 11. AI prompt log
 
-Tool: Claude (Claude Code), used across two sessions on 2026-09-04 and
-2026-09-10. Every AI-assisted commit carries a `Co-Authored-By` trailer, so
+Tool: Claude (Claude Code), used in sessions on 2026-09-04, 2026-09-10,
+2026-09-11 and 2026-09-23. Every AI-assisted commit carries a `Co-Authored-By` trailer, so
 `git log` is the primary record:
 
 ```
@@ -583,11 +593,23 @@ git log --format='%h %s %(trailers:key=Co-Authored-By,valueonly)'
 | `42adcbb` | +52 −62 | AI | Bugs 5–12 and the record-mode restructure |
 | `388fd74` | +10 −2 | AI | Replaced `?:` with `if`/`else` (the ternary appears nowhere in the course demos) |
 | `06214f1` | +49 −13 | AI | Amplitude envelope, fix15 macros, fix15 sine table |
+| `0e488c5` | +101 −3 | AI | **Compose mode, 10× playback (1 ms playback step), note gap**, and cardinal presets |
+| `ed8da10` | +8 −4 | AI | Presets on all nine keys; `MAX_SAMPLES` raised to 2500 |
+| `8ac6766` | +16 −1 | AI | Silence in presets drives `tone`, so the envelope ramps each syllable |
+| `de0bef8` | +26 −5 | AI | Playback scheduled against an absolute timebase so timing cannot drift |
+| `e2c39f1` | +8 −3 | AI | Print playback timing only for single key presses |
+| `603ee07` | +2 −1 | AI | Comment corrected (presets are on all nine keys) |
+
+`northern_cardinal.c`, `northern_cardinal.h` and `cardinal_data.h` (the
+presets) are entirely AI-written: `0e488c5`, `ed8da10`, `8ac6766`, `303be98`,
+`5a94627`. `Lab1_Birdsong_NoEnvelope/` is an AI-written measurement copy
+(`81535a0`, regenerated from the current code 2026-09-23).
 
 **Totals for the lab source file:**
 
 - Written by the group: **+595 −285**
-- Suggested by AI: **+136 −84** across five commits
+- Suggested by AI: **+136 −84** across five commits through week 2, plus
+  **+161 −17** across six commits in week 3 (table above)
 - Accepted: **all of them**
 - Rejected or reverted: **none**
 
@@ -603,6 +625,7 @@ git log --format='%h %s %(trailers:key=Co-Authored-By,valueonly)'
 | "fix all" | +52 −62, including a design change to record mode | yes |
 | "is there anything more advanced than the class" | Checked each construct against the course demo repo; `static inline` used 12 times there and `(float)` 37 times, but `?:` zero times | yes, +10 −2 |
 | "add envelope" | fix15 macros and a 5 ms linear attack/decay, following the beep demo | yes |
+| Week 3: compose mode, speed-up, cardinal presets | `0e488c5` and the preset commits above | yes |
 | Explanations only, no code | Debouncing, DDS, SPI, protothreads, matrix keypads, the C syntax of `switch`/`case`, what a recording actually contains | n/a |
 
 ### Non-source changes
@@ -615,6 +638,9 @@ documentation, not lab code. They were AI-written: `958ee7c`, `d5fc679`,
 
 - Field guide — setup, concepts, wiring diagrams, week-by-week walkthrough
 - Fix log — all twelve fixes with before and after code
+- Prep notes and Pico 2 bench notes
+
+Copies of all four are in `docs/`.
 
 ---
 
@@ -640,7 +666,9 @@ times.
 
 ### Spectrogram
 
-Aux cable from the DAC output into the laptop's microphone input, then any of:
+Use `tools/birdcall-spectrogram/` — `live.py` at the bench (freeze, press S to
+save PNG + WAV), then `birdsong.py spec <wav> --trim --track` for the report
+figure. Its README covers getting the audio in. Alternatives:
 
 - Audacity — record, then switch the track view to Spectrogram
 - WaveForms on the lab PC — Spectrum Analyzer, or the Scope's FFT view

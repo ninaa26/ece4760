@@ -21,7 +21,7 @@ Everything is installed for the system `python3` (`numpy`, `scipy`, `matplotlib`
 Double-click **`Live Spectrogram.command`** in Finder, or:
 
 ```bash
-cd ~/Developer/One_Off_Projects/birdcall-spectrogram
+cd tools/birdcall-spectrogram
 python3 live.py
 ```
 
@@ -59,7 +59,7 @@ The saved WAV is the same audio as the picture, so you can always re-render it
 later with different windowing:
 
 ```bash
-python3 birdsong.py spec captures/live_20260911_154701.wav --trim --track --fmax 4000
+python3 birdsong.py spec captures/live_<timestamp>.wav --trim --track --fmax 8000
 ```
 
 That prints measured numbers you can quote — start/end frequency and duration —

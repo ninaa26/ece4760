@@ -4,6 +4,9 @@ Not the code to hand in — see [`../Lab1_Birdsong/`](../Lab1_Birdsong/).
 
 Identical to the real project except the amplitude envelope is absent: notes
 switch on and off instantly instead of ramping over 5 ms.
+The cardinal presets are compiled in from `../Lab1_Birdsong/` rather than
+copied. If `birdsong.c` changes, regenerate this file so the two stay identical
+except for the envelope.
 
 ## Why it exists
 

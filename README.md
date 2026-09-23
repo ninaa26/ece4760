@@ -20,7 +20,6 @@ ece4760/
 │   ├── pt_cornell_rp2040_v1_4.h   protothreads (Bruce Land), unmodified
 │   └── pico_sdk_import.cmake      SDK boilerplate, unmodified
 ├── Lab1_Birdsong_NoEnvelope/   same build minus the envelope, for ISR timing
-├── Audio_Timer_Interrupt_DDS/  early standalone keypad + ADC DDS sketch
 ├── notes/
 │   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
 │   └── figures/            scope traces and photos for the report
@@ -45,7 +44,7 @@ elsewhere.
 - `birdsong.py` — offline: device list, level meter, fixed-length record, and a
   higher-quality re-render of any saved WAV for the figure that goes in the report.
 - `Live Spectrogram.command` — double-clickable launcher.
-- `captures/` — three real captures from 11 Sep plus a `selftest_swoop` pair.
+- `captures/` — where `live.py` saves. Empty until report captures are taken.
 
 Installed against the system `python3` (numpy, scipy, matplotlib, sounddevice).
 

@@ -26,9 +26,12 @@ project(birdsong_no_envelope C CXX ASM)
 # initialize the sdk
 pico_sdk_init()
 
-add_executable(birdsong_no_envelope birdsong_no_envelope.c)
+add_executable(birdsong_no_envelope birdsong_no_envelope.c ../Lab1_Birdsong/northern_cardinal.c)
 
-target_sources(birdsong_no_envelope PRIVATE birdsong_no_envelope.c)
+target_sources(birdsong_no_envelope PRIVATE birdsong_no_envelope.c ../Lab1_Birdsong/northern_cardinal.c)
+
+# The cardinal presets are shared with the main build, not copied.
+target_include_directories(birdsong_no_envelope PRIVATE ../Lab1_Birdsong)
 
 target_link_libraries(birdsong_no_envelope 
     pico_stdlib 
