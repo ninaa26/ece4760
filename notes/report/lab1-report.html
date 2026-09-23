@@ -3,17 +3,18 @@ body{font-family:Arial;font-size:11pt;line-height:1.4}
 h1{font-size:20pt} h2{font-size:15pt;margin-top:18pt} h3{font-size:12pt}
 .todo{background:#fff2a8}
 .note{color:#7a5c00;font-style:italic}
+.sug{color:#6e7781;font-style:italic}
 table{border-collapse:collapse} td,th{border:1px solid #999;padding:4px 6px;vertical-align:top;font-size:10pt} th{background:#eee}
 code{font-family:'Courier New'}
 </style></head><body>
 
 <h1>ECE 4760 Lab 1 Report: Synthesizing Birdsong</h1>
-<p><span class="todo">[Name (netID)], [Name (netID)], [Name (netID)]</span><br>Fall 2026 · Raspberry Pi Pico 2 (RP2350)</p>
+<p><span class="todo">____ (____), ____ (____), ____ (____)</span> <span class="sug">(full names and netIDs of all group members)</span><br>Fall 2026 · Raspberry Pi Pico 2 (RP2350)</p>
 
-<p class="note">How to use this draft: yellow highlights are things only we can fill in (bench measurements, figures, names) or places that need our own words. Italic notes are instructions to us; delete them before submitting. Everything else is a first draft written from our submitted code and lab notebook. Rewrite it in our own voice. Layout follows the course report policy and the example reports.</p>
+<p class="note">How to use this draft: yellow <b>____</b> blanks and <b>[FILL: …]</b> boxes are where our own data or words go; the grey "e.g." / "Suggestion" text after each one says what belongs there — delete it once filled. Other yellow notes are decisions to make. Italic notes are instructions to us; delete them before submitting. Everything else is a first draft written from our submitted code and lab notebook. Rewrite it in our own voice. Layout follows the course report policy and the example reports.</p>
 
 <h2>1. Introduction</h2>
-<p>The goal of this lab was to synthesize birdsong on a microcontroller: generate pure tones in real time, then record and replay frequency sweeps fast enough to imitate the Northern Cardinal song shown in the handout [1]. We built a keypad-controlled tone generator on a Raspberry Pi Pico 2 that can record and replay pitch sweeps, the building blocks of birdsong. A timer interrupt running at 50 kHz uses direct digital synthesis (DDS) to generate a sine wave. The wave is sent over SPI to an MCP4822 digital-to-analog converter (DAC), whose output drives an oscilloscope and a speaker. A slide potentiometer sets the pitch from 0 to about 10 kHz. A 12-key keypad controls the system. Key 0 turns the tone on and off. The <code>*</code> key arms recording: holding any key 1–9 then stores the potentiometer's pitch for as long as the key is held. Pressing that key again plays the recording back at 10× speed, so a slow sweep of the slider becomes a fast bird-like chirp. The <code>#</code> key starts compose mode, which records a sequence of keys; pressing <code>#</code> again plays the sequence back. The system passed all three weekly checkoffs, including the final demo: we imitated the cardinal song in the handout's Fig. 2 and replayed a sequence a TA recorded, without resetting or reprogramming the Pico.</p>
+<p>The goal of this lab was to synthesize birdsong on a microcontroller: generate pure tones in real time, then record and replay frequency sweeps fast enough to imitate the Northern Cardinal song shown in the handout [1]. We built a keypad-controlled tone generator on a Raspberry Pi Pico 2 that can record and replay pitch sweeps, the building blocks of birdsong. A timer interrupt running at 50 kHz uses direct digital synthesis (DDS) to generate a sine wave. The wave is sent over SPI to an MCP4822 digital-to-analog converter (DAC), whose output drives an oscilloscope and a speaker. A slide potentiometer sets the pitch from 0 to about 10 kHz. A 12-key keypad controls the system. Key 0 turns the tone on and off. The <code>*</code> key arms recording: holding any key 1–9 then stores the potentiometer's pitch for as long as the key is held. Pressing that key again plays the recording back at 10× speed, so a slow sweep of the slider becomes a fast bird-like chirp. The <code>#</code> key starts compose mode, which records a sequence of keys; pressing <code>#</code> again plays the sequence back. The system passed all three weekly checkoffs, including the final demo: we imitated the cardinal song in the handout's Fig. 2 and replayed a sequence a TA recorded, without resetting or reprogramming the Pico. <span class="todo">[FILL: one sentence on the demo outcome]</span> <span class="sug">Suggestion: "Merlin identified our phrase as a Northern Cardinal" or "Merlin did not identify it; …", and anything the TA asked us to record.</span></p>
 
 <h2>2. Design and Testing Methods</h2>
 
@@ -21,7 +22,7 @@ code{font-family:'Courier New'}
 <p>A recording stores pitches, not audio. The audio itself is generated live by DDS. A 32-bit phase accumulator gains a phase increment <i>N</i> on every interrupt and wraps around at 2³², so each wrap is one cycle of the output sine. The output frequency is</p>
 <p style="text-align:center"><i>F</i><sub>out</sub> = <i>N</i> · <i>F</i><sub>s</sub> / 2³²  &nbsp; so &nbsp; <i>N</i> = <i>F</i><sub>out</sub> · 2³² / <i>F</i><sub>s</sub></p>
 <p>With <i>F</i><sub>s</sub> = 50 kHz, one unit of increment is 50 000 / 2³² ≈ 1.16 × 10⁻⁵ Hz, far finer than anything audible. The top of our range, 10 kHz, needs <i>N</i> = 858 993 459, which fits comfortably in 32 bits. The top 8 bits of the accumulator (<code>phase_accum_main &gt;&gt; 24</code>) index a 256-entry sine table holding ±2047. Adding 2048 centres the wave in the DAC's 12-bit range (0–4095, or 0–2.048 V at 1× gain), and the result goes to the DAC's channel B.</p>
-<p><b>Why these parameters.</b> We kept the demo's 50 kHz sample rate [6]. It has to be more than twice the highest pitch we need (10 kHz), and 50 kHz clears that with 5 samples per cycle at the top of the range. At 150 MHz, one 20 µs sample period is 3000 CPU cycles, leaving plenty of time outside the ISR for the threads (measured in §4.1). A 256-entry table indexed by the accumulator's top 8 bits keeps the lookup to one shift. The table is only 1 KB. <span class="todo">[Say why 256 entries is enough — e.g. what we heard or saw on the spectrogram.]</span> SPI runs at 20 MHz, so one 16-bit DAC word takes 0.8 µs, 4 % of the sample period.</p>
+<p><b>Why these parameters.</b> We kept the demo's 50 kHz sample rate [6]. It has to be more than twice the highest pitch we need (10 kHz), and 50 kHz clears that with 5 samples per cycle at the top of the range. At 150 MHz, one 20 µs sample period is 3000 CPU cycles, leaving plenty of time outside the ISR for the threads (measured in §4.1). A 256-entry table indexed by the accumulator's top 8 bits keeps the lookup to one shift. The table is only 1 KB. <span class="todo">[FILL: why 256 entries was enough for us]</span> <span class="sug">Suggestion: what we heard through the speaker or saw on the spectrogram, e.g. "no audible distortion" or "harmonics more than __ dB below the tone".</span> SPI runs at 20 MHz, so one 16-bit DAC word takes 0.8 µs, 4 % of the sample period.</p>
 <p>The Nyquist limit is 25 kHz, so 10 kHz is 40 % of it. At 10 kHz each cycle has only 5 samples, so the scope shows a visibly stepped wave at the top of the slider's range. That is expected, and it is still a valid reconstruction. At 2 kHz there are 25 samples per cycle.</p>
 <p><b>Mapping the potentiometer.</b> The ADC reads 0–4095. Used directly as a frequency, that would only reach 4095 Hz, short of both the 10 kHz requirement and the 2–7 kHz sweeps of a cardinal. <code>adc_to_phase_incr()</code> scales the reading to 0–10 000 Hz and converts it to a phase increment. It is the only place that conversion happens, so recording and playback always agree. The potentiometer's ends go to 3.3 V and ground and the wiper to ADC0, so the ADC reads its position linearly, 0–4095 [6].</p>
 <p><b>Four different "frequencies."</b> The 50 kHz sample rate is how often the ISR produces a sample. The pitch (0–10 kHz) is what the potentiometer sets and what we hear. The recording rate (100 Hz) is how often the pitch is stored. The playback rate (1 kHz) is how often a stored pitch is replayed. Recording at 100 Hz and replaying at 1 kHz gives the required 8–10× speed-up without raising the pitch. Speeding up a list of pitches replays the same notes faster; speeding up the audio itself would raise every frequency.</p>
@@ -29,9 +30,10 @@ code{font-family:'Courier New'}
 <p class="todo">[Amplitude envelope: the report must include "a scope display of a swoop/chirp showing rise, sustain, fall". Our submitted code has no amplitude envelope; notes start and stop instantly. Decide: either add an envelope to the code before capturing (and log it), or show the trace we get and explain why it has no ramped rise and fall.]</p>
 
 <h3>2.2 Hardware</h3>
-<p><span class="todo">[Figure 1: photo of the breadboard from directly above, keypad and potentiometer in place.]</span></p>
+<p><span class="todo">[FILL: Figure 1 — photo of our breadboard]</span> <span class="sug">Suggestion: taken from directly above with the Pico, DAC, audio socket, potentiometer and keypad all visible; label the parts in the caption.</span></p>
+<p class="cap">Figure 1. <span class="todo">____</span> <span class="sug">(e.g. "Our breadboard: Pico 2 (left), MCP4822 (centre), keypad (right).")</span></p>
 <img src="../figures/diagrams/fig_schematic.png" width="6.5">
-<p class="cap">Figure 2. Circuit as built (drawn by us). DAC pins from the MCP4822 datasheet [2]; audio socket per [3]; reset button per [4]; keypad per [5]. <span class="todo">[Check against the breadboard.]</span></p>
+<p class="cap">Figure 2. Circuit as built (drawn by us). DAC pins from the MCP4822 datasheet [2]; audio socket per [3]; reset button per [4]; keypad per [5]. <span class="todo">[Check this against our breadboard; correct anything we wired differently.]</span></p>
 <table>
 <tr><th>Component</th><th>Connection</th><th>Purpose</th></tr>
 <tr><td>Raspberry Pi Pico 2 (RP2350), 150 MHz</td><td>—</td><td>Runs the ISR and the three protothreads.</td></tr>
@@ -116,7 +118,7 @@ Keypad thread, every 30 ms:
 <li><b>LED heartbeat.</b> The keypad thread toggles GPIO 25 every pass, so a steady blink shows the scheduler is still running.</li>
 <li><b>Standalone demos.</b> The ADC and keypad demos [6], each run alone before integrating.</li>
 </ul>
-<p class="todo">[Add how we actually used each tool; e.g. which bug the serial log or the scope found.]</p>
+<p><span class="todo">[FILL: how we actually used these tools, 2–4 sentences]</span> <span class="sug">Suggestion: "The serial log showed ____ when ____, which told us ____." / "On the scope we saw ____, which turned out to be ____." Use the bench bugs from §2.6.</span></p>
 
 <h3>2.5 Key design decisions</h3>
 <ul>
@@ -124,7 +126,7 @@ Keypad thread, every 30 ms:
 <li><b>Record in the 100 Hz ADC thread, not the 33 Hz keypad thread.</b> The keypad thread only sets flags. Capturing there would lose two thirds of the detail.</li>
 <li><b>A mode gate on the potentiometer.</b> Without <code>if (!playing)</code>, the ADC thread and the playback thread both write the pitch, and the slider overwrites much of the recording.</li>
 <li><b><code>uint16_t</code> storage.</b> Readings are 0–4095, so they fit in half the space of a 32-bit phase increment (suggested on the course forum by Dennis Bui).</li>
-<li><b>Recording length.</b> Bruce Land suggested finding out how large an array the chip would take. By building at increasing sizes, we found that 25 000 samples per key links and 26 000 does not. We chose 1000: 10 s of recording per key, 1 s at playback speed, and 20 KB of the 520 KB of RAM. A cardinal's whistle is well under a second.</li>
+<li><b>Recording length.</b> Bruce Land suggested finding out how large an array the chip would take. Claude ran this test for us by building at increasing sizes: 25 000 samples per key links and 26 000 does not. We chose 1000: 10 s of recording per key, 1 s at playback speed, and 20 KB of the 520 KB of RAM. A cardinal's whistle is well under a second.</li>
 <li><b>Record-mode behaviour.</b> Following Hunter's forum answer, <code>*</code> arms a single recording and the device defaults to not recording.</li>
 <li><b>Keys indexed 1–9 directly.</b> The arrays are sized 10 with slot 0 unused, so index N is key N and no subtraction can go wrong.</li>
 </ul>
@@ -135,17 +137,24 @@ Keypad thread, every 30 ms:
 <p><b>How each requirement was verified.</b></p>
 <table>
 <tr><th>Requirement</th><th>Test</th><th>Result</th></tr>
-<tr><td>DAC produces the tone</td><td>Scope on VOUTB; listen through the jack</td><td><span class="todo">[frequency and amplitude read off the scope]</span></td></tr>
-<tr><td>Pot sets 0 to ~10 kHz</td><td>Scope frequency at the bottom, middle and top of the slider</td><td><span class="todo">[see Results]</span></td></tr>
-<tr><td>0 toggles cleanly</td><td>Repeated presses with the serial log open: one "tone on/off" line per press</td><td><span class="todo">[pass/fail]</span></td></tr>
-<tr><td>Record while held, stop on release</td><td>Hold a key for a timed ~2 s; on release the serial log prints the samples stored (~200 expected at 100 Hz)</td><td><span class="todo">[___ samples]</span></td></tr>
-<tr><td>Playback at 8–10×</td><td>Time a playback of a known-length recording on the scope</td><td><span class="todo">[see Results]</span></td></tr>
-<tr><td>Separate sound per key</td><td>Record different sweeps on several keys, then play each</td><td><span class="todo">[pass/fail]</span></td></tr>
-<tr><td>Compose and replay</td><td><code>#</code>, several keys, <code>#</code>; the log prints each key added</td><td><span class="todo">[pass/fail]</span></td></tr>
-<tr><td>ISR timing</td><td>Scope on GPIO 2</td><td><span class="todo">[see Results]</span></td></tr>
+<tr><td>DAC produces the tone</td><td>Scope on VOUTB; listen through the jack</td><td><span class="todo">____</span> <span class="sug">(e.g. "800 Hz demo tone, 2.0 V p-p on the scope; clean tone on the speaker")</span></td></tr>
+<tr><td>Pot sets 0 to ~10 kHz</td><td>Scope frequency at the bottom, middle and top of the slider</td><td><span class="todo">____</span> <span class="sug">(e.g. "≈0 Hz to 9.9 kHz, see Table 4.2")</span></td></tr>
+<tr><td>0 toggles cleanly</td><td>Repeated presses with the serial log open: one "tone on/off" line per press</td><td><span class="todo">____</span> <span class="sug">(e.g. "pass — 20 presses, 20 log lines, no double toggles")</span></td></tr>
+<tr><td>Record while held, stop on release</td><td>Hold a key for a timed ~2 s; on release the serial log prints the samples stored (~200 expected at 100 Hz)</td><td><span class="todo">____</span> <span class="sug">(e.g. "2 s hold → 198 samples (expected 200)")</span></td></tr>
+<tr><td>Playback at 8–10×</td><td>Time a playback of a known-length recording on the scope</td><td><span class="todo">____</span> <span class="sug">(e.g. "2.0 s recording played in 0.2x s, see §4.4")</span></td></tr>
+<tr><td>Separate sound per key</td><td>Record different sweeps on several keys, then play each</td><td><span class="todo">____</span> <span class="sug">(e.g. "pass — keys 1–5 each held a different sweep")</span></td></tr>
+<tr><td>Compose and replay</td><td><code>#</code>, several keys, <code>#</code>; the log prints each key added</td><td><span class="todo">____</span> <span class="sug">(e.g. "pass — 5-key phrase replayed in order; also the TA's sequence at the demo")</span></td></tr>
+<tr><td>ISR timing</td><td>Scope on GPIO 2</td><td><span class="todo">____</span> <span class="sug">(e.g. "__ µs of 20 µs, see §4.1")</span></td></tr>
 </table>
 
-<p><b>Bugs found and fixed.</b> A code review after week 2 found several defects. The ones that taught us the most:</p>
+<p><b>Bugs we found at the bench.</b> <span class="todo">[FILL: the problems we hit while building and how we found them — this is the part graders value most]</span> <span class="sug">Suggestion: for each: what we saw, which tool revealed it (serial log, scope, speaker, LED), the cause, the fix. Compose mode, wiring, keypad pin order and serial output are likely candidates.</span></p>
+<table>
+<tr><th>What we saw</th><th>How we found the cause</th><th>Cause</th><th>Fix</th></tr>
+<tr><td><span class="todo">____</span> <span class="sug">(e.g. "keypad read every key as −1")</span></td><td><span class="todo">____</span> <span class="sug">(e.g. "printed the raw scan code over serial")</span></td><td><span class="todo">____</span> <span class="sug">(e.g. "wired keypad by the demo comment's pin order")</span></td><td><span class="todo">____</span> <span class="sug">(e.g. "rewired by the labels on the part")</span></td></tr>
+<tr><td>____</td><td>____</td><td>____</td><td>____</td></tr>
+<tr><td>____</td><td>____</td><td>____</td><td>____</td></tr>
+</table>
+<p><b>Bugs found by an AI code review.</b> After week 2 we asked Claude to review our code. It found the defects below, and fixed them at our request (see §2.7 and Appendix B). The ones that taught us the most:</p>
 <table>
 <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
 <tr><td>Record and play behaved randomly</td><td>A non-static local array inside a protothread. Protothreads resume by jumping into a <code>switch</code>, so locals do not survive a yield.</td><td>Keep state in statics or globals; the recording length now says whether a key is recorded.</td></tr>
@@ -156,12 +165,13 @@ Keypad thread, every 30 ms:
 <tr><td>Pop on mute</td><td>Mute sent 0 V instead of mid-scale</td><td>Write 2048 when the tone is off</td></tr>
 <tr><td>Recordings vanished after toggling record mode</td><td>Entering record mode cleared every key</td><td>Clear only the key being recorded</td></tr>
 </table>
-<p>Several of these were the same mistake: one fact stored in two places that then drifted apart. <span class="todo">[Add any bugs we hit at the bench, e.g. while adding compose mode.]</span></p>
+<p>Several of these were the same mistake: one fact stored in two places that then drifted apart.</p>
 
 <h3>2.7 Use of AI</h3>
 <p class="note">Required by the policy. Check every claim here, and say it in our own words.</p>
 <p>We used Claude (Claude Code). It set up the toolchain: the Pico SDK and the official Arm GCC toolchain. It diagnosed that Homebrew's compiler ships without a C library and fails to link. It explained concepts including DDS, SPI, protothreads, debouncing and matrix keypads. We wrote the ADC integration, keypad scan, debounce state machine, record mode, playback thread, the 10× playback rate and compose mode. After week 2 we asked it to review our code. It found the bugs in the table above and fixed them at our request, including <code>adc_to_phase_incr()</code> (marked in the listing), the mode gate, the array sizing, mid-scale muting and the record-mode restructure. <span class="todo">[It also wrote later features (an amplitude envelope, its own compose mode and playback timing) that we did not use in the submitted code. Decide whether to mention this.]</span> The full prompt log is in Appendix B.</p>
-<p class="todo">[Reflect in our own words: what the AI was useful for, where we had to check it, and what we understood versus accepted.]</p>
+<p><b>AI in this report.</b> Claude also drafted the structure and first text of this report. It drew Figures 2–5 from our code and wiring, and computed the word and line counts in Appendix B from our session transcripts and git history. We checked every statement against our code and the bench, rewrote the text in our own words, and took all measurements and photographs ourselves. <span class="todo">[FILL: confirm this matches what we actually did, and adjust]</span> <span class="sug">Suggestion: e.g. which sections we rewrote completely, and anything we changed after checking.</span></p>
+<p><span class="todo">[FILL: our reflection on using AI, 3–5 sentences]</span> <span class="sug">Suggestion: what it was most useful for (e.g. the code review, the toolchain problem); where it was wrong or we had to check it; which of its changes we could explain ourselves versus accepted; whether we would use it the same way next lab.</span></p>
 
 <h2>3. Documentation</h2>
 <p>Figures 1–5 above: photo, schematic, software block diagram, debounce state machine, and key-handling flowchart. The commented code listing is in Appendix A.</p>
@@ -177,44 +187,58 @@ Keypad thread, every 30 ms:
 
 <h3>4.1 Speed</h3>
 <p>At 150 MHz, one 20 µs sample period is 3000 CPU cycles. The ISR has to fit well inside that to leave time for the threads.</p>
-<p><b>Method:</b> <span class="todo">[scope channel on GPIO 2, ___ µs/div, pulse-width and period from the scope's measure function, averaged over ___ pulses; once with the tone on, once muted with key 0.]</span></p>
+<p><b>Method:</b> scope on GPIO 2 at <span class="todo">____</span> <span class="sug">(e.g. 2)</span> µs/div; pulse width and period from the scope's measure function, averaged over <span class="todo">____</span> <span class="sug">(e.g. 100)</span> pulses; once with the tone on and once muted with key 0.</p>
 <table>
 <tr><th></th><th>Measured</th><th>In cycles (× 150)</th><th>Share of 20 µs</th></tr>
-<tr><td>ISR pulse width on GPIO 2, tone on</td><td><span class="todo">___ µs</span></td><td><span class="todo">___</span></td><td><span class="todo">___ %</span></td></tr>
-<tr><td>ISR pulse width, tone off</td><td><span class="todo">___ µs</span></td><td><span class="todo">___</span></td><td><span class="todo">___ %</span></td></tr>
-<tr><td>Period between pulses</td><td><span class="todo">___ µs</span></td><td></td><td>expected 20.0</td></tr>
+<tr><td>ISR pulse width on GPIO 2, tone on</td><td><span class="todo">____</span> µs</td><td><span class="todo">____</span> <span class="sug">(µs × 150)</span></td><td><span class="todo">____</span> % <span class="sug">(µs ÷ 20)</span></td></tr>
+<tr><td>ISR pulse width, tone off</td><td><span class="todo">____</span> µs</td><td><span class="todo">____</span></td><td><span class="todo">____</span> %</td></tr>
+<tr><td>Period between pulses</td><td><span class="todo">____</span> µs</td><td></td><td>expected 20.0</td></tr>
 </table>
-<p>For reference, the SPI transfer alone is 16 bits at 20 MHz = 0.8 µs. <span class="todo">[Figure 6: GPIO 2 on the scope.]</span></p>
+<p>For reference, the SPI transfer alone is 16 bits at 20 MHz = 0.8 µs. </p>
+<p><span class="todo">[FILL: Figure 6 — scope capture of GPIO 2]</span> <span class="sug">Suggestion: several pulses on screen with the width and period measurements visible.</span></p>
+<p class="cap">Figure 6. ISR timing on GPIO 2: <span class="todo">____</span> µs high every <span class="todo">____</span> µs.</p>
+<p><span class="todo">[FILL: 1–2 sentences interpreting it]</span> <span class="sug">Suggestion: "The ISR uses __ % of each sample period, leaving __ cycles for the threads. Muting saves __ µs because the ISR skips the phase update and table lookup."</span></p>
 
 <h3>4.2 Accuracy</h3>
-<p><b>Method:</b> <span class="todo">[scope on VOUTB, frequency from the measure function; ADC reading from the serial log (uncomment the ADC printf); expected frequency = reading × 10 000 / 4095.]</span></p>
+<p><b>Method:</b> scope on VOUTB, frequency from the scope's measure function; ADC reading from the serial log (uncomment the <code>printf</code> in <code>protothread_toggle25</code>); expected frequency = reading × 10 000 / 4095; error = (measured − expected) / expected.</p>
 <table>
 <tr><th>Slider</th><th>Expected frequency</th><th>Measured frequency</th><th>Error</th></tr>
-<tr><td>Bottom</td><td>~0 Hz</td><td><span class="todo">___</span></td><td><span class="todo">___</span></td></tr>
-<tr><td>Middle</td><td><span class="todo">___</span></td><td><span class="todo">___</span></td><td><span class="todo">___</span></td></tr>
-<tr><td>Top</td><td>~10 000 Hz</td><td><span class="todo">___</span></td><td><span class="todo">___</span></td></tr>
+<tr><td>Bottom</td><td><span class="todo">____</span> Hz <span class="sug">(reading × 2.442)</span></td><td><span class="todo">____</span> Hz</td><td><span class="todo">____</span> %</td></tr>
+<tr><td>Middle</td><td><span class="todo">____</span> Hz</td><td><span class="todo">____</span> Hz</td><td><span class="todo">____</span> %</td></tr>
+<tr><td>Top</td><td><span class="todo">____</span> Hz <span class="sug">(≈10 000)</span></td><td><span class="todo">____</span> Hz</td><td><span class="todo">____</span> %</td></tr>
 </table>
-<p>Output amplitude: <span class="todo">___ V</span> peak-to-peak (full scale is 2.048 V at 1× gain).</p>
+<p>Output amplitude: <span class="todo">____</span> V peak-to-peak (full scale is 2.048 V at 1× gain; the table spans ±2047 of 4096, so expect about 2.0 V). <span class="todo">[FILL: explain any error]</span> <span class="sug">Suggestion: e.g. scope measurement resolution, DAC gain error, or the stepped wave near 10 kHz.</span></p>
 
 <h3>4.3 Scope display of a swoop</h3>
-<p><span class="todo">[Figure 7: scope at 10–20 ms/div, single-shot trigger, one recorded swoop played back. Annotate rise, sustain, fall, or explain their absence (see §2.1).]</span></p>
+<p><b>Method:</b> scope on VOUTB at <span class="todo">____</span> <span class="sug">(e.g. 20)</span> ms/div, single-shot trigger on the rising edge, then play one recorded swoop.</p>
+<p><span class="todo">[FILL: Figure 7 — scope capture of a swoop]</span> <span class="sug">Suggestion: annotate where the note starts (rise), holds (sustain) and stops (fall).</span></p>
+<p class="cap">Figure 7. <span class="todo">____</span> <span class="sug">(e.g. "A __ ms swoop played back from key __; without an envelope the amplitude steps on and off.")</span></p>
+<p><span class="todo">[FILL: what the trace shows, with numbers]</span> <span class="sug">Suggestion: the note length measured on the scope against the expected (samples ÷ 1000 s), the amplitude, and what the start and end look like. If we add an envelope, measure the rise and fall times.</span></p>
 
 <h3>4.4 Playback speed</h3>
-<p><span class="todo">[Record a timed sweep (e.g. 2 s → ~200 samples), then measure the playback on the scope. Expected ~200 ms for 10×. Each sample waits at least 1 ms plus scheduling, so playback may run slightly slower than exactly 10×; report the measured ratio.]</span></p>
+<p><b>Method:</b> record a sweep while timing the hold, read the sample count the serial log prints on release, then play it back and measure its length on the scope. Each playback step waits at least 1 ms plus scheduling, so playback may run slightly slower than exactly 10×.</p>
+<table>
+<tr><th>Hold time</th><th>Samples logged</th><th>Expected samples (hold × 100)</th><th>Playback measured</th><th>Speed-up (hold ÷ playback)</th></tr>
+<tr><td><span class="todo">____</span> <span class="sug">(e.g. 2.0 s)</span></td><td><span class="todo">____</span></td><td><span class="todo">____</span></td><td><span class="todo">____</span> ms</td><td><span class="todo">____</span>×</td></tr>
+<tr><td><span class="todo">____</span></td><td><span class="todo">____</span></td><td><span class="todo">____</span></td><td><span class="todo">____</span> ms</td><td><span class="todo">____</span>×</td></tr>
+</table>
 
 <h3>4.5 Spectrogram</h3>
-<p><span class="todo">[Figure 8: spectrogram of the MCU's output, such as our Fig. 2 imitation played back through compose mode. Say how it was captured (aux cable or speaker to mic, sample rate, window length). Compare with the handout's Fig. 2: frequency range, durations, gaps. Did Merlin identify it?]</span></p>
+<p><b>Method:</b> <span class="todo">____</span> <span class="sug">(e.g. "DAC output through an aux cable into the laptop, recorded at 48 kHz; spectrogram in Python (scipy) with a 1024-point Hann window")</span>.</p>
+<p><span class="todo">[FILL: Figure 8 — spectrogram of the MCU output]</span> <span class="sug">Suggestion: our Fig. 2 imitation played through compose mode, with the frequency axis to about 8 kHz so it can be compared with the handout's Fig. 2 [1].</span></p>
+<p class="cap">Figure 8. <span class="todo">____</span> <span class="sug">(e.g. "Spectrogram of our cardinal imitation (keys __, __, __ composed).")</span></p>
+<p><span class="todo">[FILL: comparison with Fig. 2, with numbers]</span> <span class="sug">Suggestion: measured frequency range against Fig. 2's ~2–7 kHz; length of each sweep and gap; any vertical smears at note edges (expected without an envelope); what Merlin reported.</span></p>
 
 <h3>4.6 What worked well, what didn't, what's unique</h3>
 <ul>
-<li class="todo">[Well: e.g. recordings persist across modes; 10× speed-up without raising pitch]</li>
-<li class="todo">[Poorly: e.g. stepped waveform near 10 kHz; clicks at note edges without an envelope; anything from the demo]</li>
-<li class="todo">[Unique: anything about our approach]</li>
+<li><b>Performed well:</b> <span class="todo">____</span> <span class="sug">(e.g. recordings persist across modes; the speed-up doesn't change pitch; the demo ran without a reset)</span></li>
+<li><b>Performed poorly:</b> <span class="todo">____</span> <span class="sug">(e.g. stepped waveform near 10 kHz; clicks at note edges; anything that went wrong at the demo)</span></li>
+<li><b>What's different about ours:</b> <span class="todo">____</span> <span class="sug">(e.g. 10× by replay rate rather than resampling; recording stops on key release; anything else we did our own way)</span></li>
 </ul>
 
 <h2>5. Conclusions</h2>
 <p class="note">The rubric weights this section at about 18 %. Cover: what we learned; problems we hit and how we debugged them; improvements to our implementation; improvements to the lab.</p>
-<p class="todo">[Usability: e.g. no feedback for which mode you're in except the serial log; an LED per mode would help. What we learned: interrupts and timing budgets, DDS, sharing state between an ISR and threads, debouncing. The biggest lesson from the bugs (one fact in two places). What we'd do differently, e.g. check the frequency range against the spec when integrating rather than a week later. Comments or suggestions on the lab.]</p>
+<p class="todo">[FILL, in four short paragraphs. Usability: e.g. no feedback for which mode you're in except the serial log; an LED per mode would help. What we learned: interrupts and timing budgets, DDS, sharing state between an ISR and threads, debouncing. The biggest lesson from the bugs (one fact in two places). What we'd do differently, e.g. check the frequency range against the spec when integrating rather than a week later. Comments or suggestions on the lab.]</p>
 
 <h2>6. Answers to lab questions</h2>
 <p class="note">The current Lab 1 page asks no specific questions, so this section answers the prep-sheet questions (2021 PIC32 version). Check with a TA whether that is expected, or drop the section.</p>
@@ -245,8 +269,10 @@ Keypad thread, every 30 ms:
 <tr><td>Sep 4</td><td>16</td><td>525</td><td>10 495</td><td>toolchain setup, prep questions</td></tr>
 <tr><td>Sep 10</td><td>46</td><td>5 381</td><td>20 606</td><td>code review and bug fixes</td></tr>
 <tr><td>Sep 11</td><td>40</td><td>2 056</td><td>15 021</td><td>week 3 features (not used in the submitted code)</td></tr>
+<tr><td>Sep 20, 23</td><td>19</td><td>7 014</td><td>8 691</td><td>repository housekeeping; drafting this report and its figures (not code generation)</td></tr>
+<tr><td><b>Total</b></td><td><b>121</b></td><td><b>14 976</b></td><td><b>54 813</b></td><td></td></tr>
 </table>
-<p>"Our words" includes handout text pasted into prompts.</p>
+<p>"Our words" includes text pasted into prompts (handout text, our code). "Claude's words" counts its chat replies, not code or report text it wrote to files; that is counted in lines below.</p>
 <p><b>AI code changes and whether they are in the submitted code</b> (lines added / removed):</p>
 <table>
 <tr><th>Change</th><th>+/−</th><th>In submitted code?</th></tr>
@@ -254,8 +280,8 @@ Keypad thread, every 30 ms:
 <tr><td>Bugs 3–4: mode gate, tone on at boot, key 0 toggle</td><td>+15 −4</td><td>yes</td></tr>
 <tr><td>Bugs 5–12: <code>adc_to_phase_incr()</code>, mid-scale mute, record-mode restructure, playback interruptible, single LED owner, comment fixes</td><td>+52 −62</td><td>yes</td></tr>
 <tr><td><code>?:</code> replaced with <code>if/else</code></td><td>+10 −2</td><td><span class="todo">[partly?]</span></td></tr>
-<tr><td>Amplitude envelope; compose mode; playback timing</td><td><span class="todo">[fill]</span></td><td>no</td></tr>
+<tr><td>Later features: amplitude envelope, its own compose mode, playback timing, and other additions (7 commits)</td><td>+210 −30</td><td>no</td></tr>
 </table>
-<p class="todo">[Totals: suggested ___ / accepted into the submitted code ___. Add the list of prompts and responses: notes/lab-notebook.md §11 in the repo.]</p>
+<p><b>Totals for the lab source file:</b> suggested by AI +297 −101 across 11 commits; in the submitted code +77 −69 (three commits); all suggestions were accepted at the time, and the later ones were left out of the submitted version. <span class="todo">[Check these against our own memory of what we kept; add the list of prompts and responses from notes/lab-notebook.md §11.]</span></p>
 
 </body></html>

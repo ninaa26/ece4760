@@ -61,7 +61,7 @@ class P(HTMLParser):
         elif tag == "code": self.fmt.append(("code",))
         elif tag == "sub": self.fmt.append(("sub",))
         elif tag == "sup": self.fmt.append(("sup",))
-        elif tag == "span": self.fmt.append(("todo",) if "todo" in cls else ("span",))
+        elif tag == "span": self.fmt.append(("todo",) if "todo" in cls else ("sug",) if "sug" in cls else ("span",))
         elif tag == "br":
             self.emit("\n")
         elif tag == "pre":
@@ -109,6 +109,7 @@ class P(HTMLParser):
         if "sub" in f: r.font.subscript = True
         if "sup" in f: r.font.superscript = True
         if "todo" in f: r.font.highlight_color = WD_COLOR_INDEX.YELLOW
+        if "sug" in f: r.italic = True; r.font.color.rgb = RGBColor(0x6E, 0x77, 0x81)
     def handle_data(self, data):
         if self.in_style: return
         if getattr(self, "in_pre", False): self.prebuf.append(data); return
