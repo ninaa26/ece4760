@@ -1,6 +1,6 @@
 # Lab notebook — Lab 1, Synthesizing Birdsong
 
-ECE 4760, Cornell, Fall 2026
+ECE 4760 (undergraduate — 5730-only requirements do not apply), Cornell, Fall 2026
 Group members: ___
 Board: Raspberry Pi Pico 2 / RP2350
 Repo: https://github.com/ninaa26/ece4760
@@ -688,7 +688,6 @@ What is left is the report.
 
 - The 10× playback speed-up is built in: recording samples every 10 ms,
   playback every 1 ms. The report should say so explicitly.
-- There is no 5730 volume switch in this code. Only matters if enrolled in 5730.
 - ISR timing has not been re-measured with the envelope in (compare
   `Lab1_Birdsong` and `Lab1_Birdsong_NoEnvelope` on GPIO 2).
 
