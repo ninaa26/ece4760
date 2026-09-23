@@ -3,6 +3,9 @@
 Course work for Digital Systems Design Using Microcontrollers (Cornell, Fall 2026).
 Board: Raspberry Pi Pico 2 (RP2350).
 
+**Status:** Lab 1 is checked off (weeks 1–3); the report is in progress.
+Lab 2 has started (week 1) and has no folder here yet.
+
 Field guide (setup, concepts, wiring diagrams, week-by-week walkthrough):
 https://claude.ai/code/artifact/bb80ce5d-de5f-4b22-81be-ca5ed6dc881d
 

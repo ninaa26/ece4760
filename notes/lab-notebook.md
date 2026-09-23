@@ -16,6 +16,7 @@ write a number here that was not read off an instrument.
 | --- | --- |
 | 2026-09-04 | Toolchain built and verified; repo created; Lab 1 project started from Hunter's `a_Timer_Interrupt_DDS_Demo`. Week 1 lab session. |
 | 2026-09-10 | Week 2 work: keypad integrated, debounce state machine, record mode, playback thread. Code review, twelve bugs fixed, amplitude envelope added. |
+| ___ | Weeks 1, 2 and 3 all checked off. Lab 1 now in the report stage. |
 
 ---
 
@@ -670,13 +671,26 @@ Breadboard from directly above, with the keypad and potentiometer in place.
 
 ## 13. Still to do
 
-### Before the week 3 checkout
+Status: all three weekly checkoffs (weeks 1–3) passed, including the demo.
+What is left is the report.
 
-- [x] ~~Amplitude envelope~~ — done, 5 ms linear attack and decay
-- [ ] Playback at 8–10× speed (advance the index by 8 instead of 1)
-- [ ] `#` compose mode: record a key sequence, replay the phrase — implemented in code, not yet verified on the board
-- [ ] Re-measure ISR timing now that the envelope is in
-- [ ] 5730 only: external switch so the pot sets volume instead of frequency
+### Checkoffs — done
+
+- [x] Week 1
+- [x] Week 2
+- [x] Week 3, including the demo: cardinal imitation, a TA-invented
+      sequence recorded and played back, no resets or reprogramming
+- [x] Amplitude envelope — 5 ms linear attack and decay
+- [x] `#` compose mode
+
+### Open questions for the report
+
+- The code in this repo has no 8–10× playback speed-up and no 5730 volume
+  switch. Were they not needed, or does the checked-off version of
+  `birdsong.c` live somewhere else? The code listing in the report has to be
+  the code that was demoed.
+- ISR timing has not been re-measured with the envelope in (compare
+  `Lab1_Birdsong` and `Lab1_Birdsong_NoEnvelope` on GPIO 2).
 
 ### Report deliverables
 
@@ -685,9 +699,4 @@ Breadboard from directly above, with the keypad and potentiometer in place.
 - [ ] Heavily commented code listing
 - [ ] This prompt log, with final numbers
 - [ ] Photograph of the breadboard
-
-### Demo
-
-- [ ] Play a sequence that imitates the cardinal song in Fig. 2
-- [ ] Record and play back a random sequence the TA creates
-- [ ] No resets and no reprogramming at any point during the demo
+- [ ] Fill every remaining `___` in this notebook
