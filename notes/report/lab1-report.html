@@ -1,0 +1,222 @@
+<html><head><meta charset="utf-8"><style>
+body{font-family:Arial;font-size:11pt;line-height:1.4}
+h1{font-size:20pt} h2{font-size:15pt;margin-top:18pt} h3{font-size:12pt}
+.todo{background:#fff2a8}
+.note{color:#7a5c00;font-style:italic}
+table{border-collapse:collapse} td,th{border:1px solid #999;padding:4px 6px;vertical-align:top;font-size:10pt} th{background:#eee}
+code{font-family:'Courier New'}
+</style></head><body>
+
+<h1>ECE 4760 Lab 1 Report: Synthesizing Birdsong</h1>
+<p><span class="todo">[Name (netID)], [Name (netID)], [Name (netID)]</span><br>Fall 2026 · Raspberry Pi Pico 2 (RP2350)</p>
+
+<p class="note">How to use this draft: yellow highlights are things only we can fill in (bench measurements, figures, names) or places that need our own words. Italic notes are instructions to us; delete them before submitting. Everything else is a first draft written from our submitted code and lab notebook. Rewrite it in our own voice. Layout follows the course report policy and the example reports.</p>
+
+<h2>1. Introduction</h2>
+<p>In this lab we built a keypad-controlled tone generator on a Raspberry Pi Pico 2 that can record and replay pitch sweeps, the building blocks of birdsong. A timer interrupt running at 50 kHz uses direct digital synthesis (DDS) to generate a sine wave. The wave is sent over SPI to an MCP4822 digital-to-analog converter (DAC), whose output drives an oscilloscope and a speaker. A slide potentiometer sets the pitch from 0 to about 10 kHz. A 12-key keypad controls the system. Key 0 turns the tone on and off. The <code>*</code> key arms recording: holding any key 1–9 then stores the potentiometer's pitch for as long as the key is held. Pressing that key again plays the recording back at 10× speed, so a slow sweep of the slider becomes a fast bird-like chirp. The <code>#</code> key starts compose mode, which records a sequence of keys; pressing <code>#</code> again plays the sequence back. The system passed all three weekly checkoffs, including the final demo: we imitated the cardinal song in the handout's Fig. 2 and replayed a sequence a TA recorded, without resetting or reprogramming the Pico.</p>
+
+<h2>2. Design and Testing Methods</h2>
+
+<h3>2.1 Concept: direct digital synthesis</h3>
+<p>A recording stores pitches, not audio. The audio itself is generated live by DDS. A 32-bit phase accumulator gains a phase increment <i>N</i> on every interrupt and wraps around at 2³², so each wrap is one cycle of the output sine. The output frequency is</p>
+<p style="text-align:center"><i>F</i><sub>out</sub> = <i>N</i> · <i>F</i><sub>s</sub> / 2³²  &nbsp; so &nbsp; <i>N</i> = <i>F</i><sub>out</sub> · 2³² / <i>F</i><sub>s</sub></p>
+<p>With <i>F</i><sub>s</sub> = 50 kHz, one unit of increment is 50 000 / 2³² ≈ 1.16 × 10⁻⁵ Hz, far finer than anything audible. The top of our range, 10 kHz, needs <i>N</i> = 858 993 459, which fits comfortably in 32 bits. The top 8 bits of the accumulator (<code>phase_accum_main &gt;&gt; 24</code>) index a 256-entry sine table holding ±2047. Adding 2048 centres the wave in the DAC's 12-bit range (0–4095, or 0–2.048 V at 1× gain), and the result goes to the DAC's channel B.</p>
+<p>The Nyquist limit is 25 kHz, so 10 kHz is 40 % of it. At 10 kHz each cycle has only 5 samples, so the scope shows a visibly stepped wave at the top of the slider's range. That is expected, and it is still a valid reconstruction. At 2 kHz there are 25 samples per cycle.</p>
+<p><b>Mapping the potentiometer.</b> The ADC reads 0–4095. Used directly as a frequency, that would only reach 4095 Hz, short of both the 10 kHz requirement and the 2–7 kHz sweeps of a cardinal. <code>adc_to_phase_incr()</code> scales the reading to 0–10 000 Hz and converts it to a phase increment. It is the only place that conversion happens, so recording and playback always agree.</p>
+<p><b>Four different "frequencies."</b> The 50 kHz sample rate is how often the ISR produces a sample. The pitch (0–10 kHz) is what the potentiometer sets and what we hear. The recording rate (100 Hz) is how often the pitch is stored. The playback rate (1 kHz) is how often a stored pitch is replayed. Recording at 100 Hz and replaying at 1 kHz gives the required 8–10× speed-up without raising the pitch. Speeding up a list of pitches replays the same notes faster; speeding up the audio itself would raise every frequency.</p>
+<p><b>Silence without a click.</b> When the tone is off, the ISR keeps writing mid-scale (2048) to the DAC rather than 0. The wave is centred on 2048, so stopping there avoids a jump to 0 V and the loud pop that comes with it.</p>
+<p class="todo">[Amplitude envelope: the report must include "a scope display of a swoop/chirp showing rise, sustain, fall". Our submitted code has no amplitude envelope; notes start and stop instantly. Decide: either add an envelope to the code before capturing (and log it), or show the trace we get and explain why it has no ramped rise and fall.]</p>
+
+<h3>2.2 Hardware</h3>
+<p><span class="todo">[Figure 1: photo of the breadboard from directly above, keypad and potentiometer in place.]</span></p>
+<img src="../figures/diagrams/fig_schematic.png" width="6.5">
+<p class="cap">Figure 2. Circuit as built. DAC pin numbers are from the MCP4822 datasheet; keypad wiring follows the course keypad page; the reset button follows the course program-button page. <span class="todo">[Check against the breadboard.]</span></p>
+<table>
+<tr><th>Component</th><th>Connection</th><th>Purpose</th></tr>
+<tr><td>Raspberry Pi Pico 2 (RP2350), 150 MHz</td><td>—</td><td>Runs the ISR and the three protothreads.</td></tr>
+<tr><td>MCP4822 12-bit dual DAC</td><td>GPIO 5 → CS, GPIO 6 → SCK, GPIO 7 → SDI; LDAC and VSS to GND; VDD to 3V3</td><td>Turns each 16-bit SPI word into a voltage on VOUTB. LDAC is tied low so the output updates as soon as a word arrives.</td></tr>
+<tr><td>3.5 mm audio socket</td><td>tip to DAC VOUTB, sleeve to GND</td><td>Speaker output.</td></tr>
+<tr><td>Slide potentiometer (Adafruit 4219, linear taper)</td><td>wiper (pin 2) → GPIO 26 / ADC0; ends to 3.3 V and GND</td><td>Sets the pitch.</td></tr>
+<tr><td>3×4 matrix keypad</td><td>rows → GPIO 9–12 through 330 Ω each; columns → GPIO 13–15 with internal pull-ups</td><td>User input. The resistors limit current if pressing two keys in one column shorts two row outputs together.</td></tr>
+<tr><td>Reset button</td><td>RUN (pin 30) to GND (pin 28)</td><td>Resets the board; two quick presses enter the bootloader for reflashing.</td></tr>
+<tr><td>GPIO 2</td><td>scope probe</td><td>High for the duration of every ISR, for timing.</td></tr>
+<tr><td>GPIO 25 (on-board LED)</td><td>—</td><td>Heartbeat toggled by the keypad thread, so a steady blink shows the scheduler is running.</td></tr>
+</table>
+<p><b>DAC command word.</b> Each SPI transfer is one 16-bit word: 4 configuration bits followed by the 12-bit value. We use <code>0b1011</code> in the top four bits (<code>DAC_config_chan_B</code>).</p>
+<table>
+<tr><th>Bit</th><th>15</th><th>14</th><th>13</th><th>12</th><th>11–0</th></tr>
+<tr><td>Name</td><td>A/B</td><td>—</td><td>GA</td><td>SHDN</td><td>D11–D0</td></tr>
+<tr><td>Our value</td><td>1 = channel B</td><td>0</td><td>1 = 1× gain (0–2.048 V)</td><td>1 = output on</td><td>sine sample + 2048</td></tr>
+</table>
+<p>Moving the output from channel A to channel B (the week 1 requirement) is a change to bit 15 alone.</p>
+<p>Two wiring lessons. First, the lab's keypads are labelled <code>Col1 Col2 Col3 Row1 Row2 Row3 Row4 NC</code> along the header, which differs from the part the demo's comment describes, so we wired by function rather than by pin number. Second, <code>printf</code> goes to UART0 (GPIO 0/1), not USB, so reading serial output needs a USB-to-serial adapter.</p>
+
+<h3>2.3 Software</h3>
+<img src="../figures/diagrams/fig_block.png" width="6.5">
+<p class="cap">Figure 3. Software structure. Three cooperative protothreads share global variables; the 50 kHz timer ISR reads the pitch and tone flag and is the only code that writes to the DAC.</p>
+<table>
+<tr><th>Part</th><th>Rate</th><th>What it does</th></tr>
+<tr><td><code>alarm_irq</code> (timer ISR)</td><td>50 kHz</td><td>Raises GPIO 2, clears and re-arms the alarm, then either advances the phase accumulator and writes the sine sample (tone on) or writes mid-scale (tone off) to the DAC over SPI, and lowers GPIO 2.</td></tr>
+<tr><td><code>protothread_toggle25</code></td><td>100 Hz</td><td>Reads the ADC. Sets the pitch from the potentiometer unless a playback is running. While recording, appends the reading to the selected key's array.</td></tr>
+<tr><td><code>protothread_playback</code></td><td>1 kHz</td><td>Replays a key's stored readings one per millisecond (10×). In compose mode, plays each key in the sequence in turn.</td></tr>
+<tr><td><code>protothread_core_0</code></td><td>33 Hz</td><td>Scans the keypad, debounces it, and sets the modes.</td></tr>
+<tr><td><code>adc_to_phase_incr()</code></td><td>—</td><td>Converts an ADC reading to a phase increment, 0–10 kHz.</td></tr>
+<tr><td><code>recordings[10][1000]</code>, <code>record_length[10]</code></td><td>—</td><td>Stored readings as <code>uint16_t</code>, indexed by key number (slot 0 unused). A key has a recording when its length is non-zero.</td></tr>
+<tr><td><code>compose_sequence[10]</code></td><td>—</td><td>A composed phrase, stored as up to 10 key numbers rather than sound.</td></tr>
+</table>
+<p>The pieces communicate only through global variables. The threads set the pitch (<code>phase_incr_main</code>) and whether the tone is on (<code>tone</code>); only the ISR touches the DAC. The protothreads library schedules from the free-running 64-bit timer (<code>time_us_64()</code>) and claims no hardware alarm, so alarm 0 is free for the audio interrupt.</p>
+
+<p><b>Keypad and debounce.</b> The scan drives one row low at a time and reads the three columns, giving a 7-bit code that is looked up in a table (index 0–9 for digits, 10 for <code>*</code>, 11 for <code>#</code>, −1 for none). A four-state machine samples it every 30 ms: NOT_PRESSED → MAYBE_PRESSED → PRESSED → MAYBE_NOT_PRESSED. A key must read the same on two consecutive scans to count. The action fires once, on the transition into PRESSED. The PRESSED state itself does nothing, which is what stops a held key firing 33 times a second. Recording stops on the transition from MAYBE_NOT_PRESSED to NOT_PRESSED, when the recorded key is released.</p>
+<img src="../figures/diagrams/fig_fsm.png" width="5.8">
+<p class="cap">Figure 4. Keypad debounce state machine, as described on the course keypad page. Key actions fire on MAYBE_PRESSED → PRESSED; recording stops on MAYBE_NOT_PRESSED → NOT_PRESSED.</p>
+<p class="todo">[Check before submitting: in our code the else { state = NOT_PRESSED; } in MAYBE_PRESSED is attached to the key-action if/else chain instead of to if (i == possible_key). So the MAYBE_PRESSED → NOT_PRESSED transition in this figure does not happen in our code. Either fix the brace or describe the difference.]</p>
+
+<p><b>Modes.</b></p>
+<table>
+<tr><th>Key</th><th>Action</th></tr>
+<tr><td>0</td><td>Toggle the tone on and off. The system boots with the tone on.</td></tr>
+<tr><td>*</td><td>Arm recording. The next key 1–9 pressed records the potentiometer's pitch while it is held; releasing it stops the recording and disarms. Other keys' recordings are untouched.</td></tr>
+<tr><td>1–9</td><td>In compose mode: add the key to the sequence. If armed: record. Otherwise: play that key back.</td></tr>
+<tr><td>#</td><td>First press starts compose mode with an empty sequence; second press plays the sequence.</td></tr>
+</table>
+
+<img src="../figures/diagrams/fig_keys.png" width="6.0">
+<p class="cap">Figure 5. What each debounced key press does.</p>
+
+<h3>2.4 Key design decisions</h3>
+<ul>
+<li><b>Store the pitch, not the audio.</b> 100 numbers a second instead of 50 000, and it makes the speed-up free.</li>
+<li><b>Record in the 100 Hz ADC thread, not the 33 Hz keypad thread.</b> The keypad thread only sets flags. Capturing there would lose two thirds of the detail.</li>
+<li><b>A mode gate on the potentiometer.</b> Without <code>if (!playing)</code>, the ADC thread and the playback thread both write the pitch, and the slider overwrites much of the recording.</li>
+<li><b><code>uint16_t</code> storage.</b> Readings are 0–4095, so they fit in half the space of a 32-bit phase increment (suggested on the course forum by Dennis Bui).</li>
+<li><b>Recording length.</b> Bruce Land suggested finding out how large an array the chip would take. By building at increasing sizes, we found that 25 000 samples per key links and 26 000 does not. We chose 1000: 10 s of recording per key, 1 s at playback speed, and 20 KB of the 520 KB of RAM. A cardinal's whistle is well under a second.</li>
+<li><b>Record-mode behaviour.</b> Following Hunter's forum answer, <code>*</code> arms a single recording and the device defaults to not recording.</li>
+<li><b>Keys indexed 1–9 directly.</b> The arrays are sized 10 with slot 0 unused, so index N is key N and no subtraction can go wrong.</li>
+</ul>
+
+<h3>2.5 Testing methods</h3>
+<p class="note">Rewrite this in our own words; it is the part the policy stresses most. Describe what we actually did at the bench.</p>
+<p><b>One change at a time, each part tested alone first.</b> We flashed a pre-built binary before wiring anything, to prove the laptop, cable and board worked. We wired the DAC and confirmed the unmodified DDS demo on the scope and through the speaker, then moved the output to channel B. We ran the ADC demo on its own and watched readings on the serial terminal before merging it with DDS. We ran the keypad demo on its own and pressed all twelve keys before merging that too. After each merge we confirmed the earlier function still worked, for example that key numbers printed while the tone kept playing.</p>
+<p><b>How each requirement was verified.</b></p>
+<table>
+<tr><th>Requirement</th><th>Test</th><th>Result</th></tr>
+<tr><td>DAC produces the tone</td><td>Scope on VOUTB; listen through the jack</td><td><span class="todo">[frequency and amplitude read off the scope]</span></td></tr>
+<tr><td>Pot sets 0 to ~10 kHz</td><td>Scope frequency at the bottom, middle and top of the slider</td><td><span class="todo">[see Results]</span></td></tr>
+<tr><td>0 toggles cleanly</td><td>Repeated presses with the serial log open: one "tone on/off" line per press</td><td><span class="todo">[pass/fail]</span></td></tr>
+<tr><td>Record while held, stop on release</td><td>Hold a key for a timed ~2 s; on release the serial log prints the samples stored (~200 expected at 100 Hz)</td><td><span class="todo">[___ samples]</span></td></tr>
+<tr><td>Playback at 8–10×</td><td>Time a playback of a known-length recording on the scope</td><td><span class="todo">[see Results]</span></td></tr>
+<tr><td>Separate sound per key</td><td>Record different sweeps on several keys, then play each</td><td><span class="todo">[pass/fail]</span></td></tr>
+<tr><td>Compose and replay</td><td><code>#</code>, several keys, <code>#</code>; the log prints each key added</td><td><span class="todo">[pass/fail]</span></td></tr>
+<tr><td>ISR timing</td><td>Scope on GPIO 2</td><td><span class="todo">[see Results]</span></td></tr>
+</table>
+
+<p><b>Bugs found and fixed.</b> A code review after week 2 found several defects. The ones that taught us the most:</p>
+<table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+<tr><td>Record and play behaved randomly</td><td>A non-static local array inside a protothread. Protothreads resume by jumping into a <code>switch</code>, so locals do not survive a yield.</td><td>Keep state in statics or globals; the recording length now says whether a key is recorded.</td></tr>
+<tr><td>Memory corruption on key 9</td><td>Arrays sized [9] for keys 1–9</td><td>Size 10, index by key number</td></tr>
+<tr><td>Playback sounded like the slider</td><td>Two threads writing the pitch</td><td>Mode gate</td></tr>
+<tr><td>Board booted silent</td><td>Tone started off and nothing handled key 0</td><td>Tone starts on; key 0 toggles it</td></tr>
+<tr><td>Slider only reached 4095 Hz</td><td>Raw ADC reading used as the frequency</td><td><code>adc_to_phase_incr()</code> scales to 10 kHz</td></tr>
+<tr><td>Pop on mute</td><td>Mute sent 0 V instead of mid-scale</td><td>Write 2048 when the tone is off</td></tr>
+<tr><td>Recordings vanished after toggling record mode</td><td>Entering record mode cleared every key</td><td>Clear only the key being recorded</td></tr>
+</table>
+<p>Several of these were the same mistake: one fact stored in two places that then drifted apart. <span class="todo">[Add any bugs we hit at the bench, e.g. while adding compose mode.]</span></p>
+
+<h3>2.6 Use of AI</h3>
+<p class="note">Required by the policy. Check every claim here, and say it in our own words.</p>
+<p>We used Claude (Claude Code). It set up the toolchain: the Pico SDK and the official Arm GCC toolchain. It diagnosed that Homebrew's compiler ships without a C library and fails to link. It explained concepts including DDS, SPI, protothreads, debouncing and matrix keypads. We wrote the ADC integration, keypad scan, debounce state machine, record mode, playback thread, the 10× playback rate and compose mode. After week 2 we asked it to review our code. It found the bugs in the table above and fixed them at our request, including <code>adc_to_phase_incr()</code> (marked in the listing), the mode gate, the array sizing, mid-scale muting and the record-mode restructure. <span class="todo">[It also wrote later features (an amplitude envelope, its own compose mode and playback timing) that we did not use in the submitted code. Decide whether to mention this.]</span> The full prompt log is in Appendix B.</p>
+<p class="todo">[Reflect in our own words: what the AI was useful for, where we had to check it, and what we understood versus accepted.]</p>
+
+<h2>3. Documentation</h2>
+<p>Figures 1–5 above: photo, schematic, software block diagram, debounce state machine, and key-handling flowchart. The commented code listing is in Appendix A.</p>
+<table>
+<tr><th>Week</th><th>Software</th><th>Hardware</th><th>How we tested</th></tr>
+<tr><td>1</td><td>DDS demo; output moved to channel B; ADC merged in, pot sets 0–10 kHz</td><td>DAC, audio jack, reset button, potentiometer</td><td>Scope and speaker; ADC demo alone on the serial terminal</td></tr>
+<tr><td>2</td><td>Keypad scan, debounce, key 0 toggle, record mode, playback thread, review fixes</td><td>Keypad with row resistors</td><td>Keypad demo alone; serial log; scope on GPIO 2</td></tr>
+<tr><td>3</td><td>10× playback, compose mode</td><td>—</td><td>Demo: Fig. 2 imitation, TA's sequence, no reset</td></tr>
+</table>
+
+<h2>4. Results</h2>
+<p class="note">Every figure: number it, caption it, refer to it in the text, and say what it shows with numbers checked against the spec, as the example reports do.</p>
+
+<h3>4.1 Speed</h3>
+<p>At 150 MHz, one 20 µs sample period is 3000 CPU cycles. The ISR has to fit well inside that to leave time for the threads.</p>
+<table>
+<tr><th></th><th>Measured</th><th>In cycles (× 150)</th><th>Share of 20 µs</th></tr>
+<tr><td>ISR pulse width on GPIO 2, tone on</td><td><span class="todo">___ µs</span></td><td><span class="todo">___</span></td><td><span class="todo">___ %</span></td></tr>
+<tr><td>ISR pulse width, tone off</td><td><span class="todo">___ µs</span></td><td><span class="todo">___</span></td><td><span class="todo">___ %</span></td></tr>
+<tr><td>Period between pulses</td><td><span class="todo">___ µs</span></td><td></td><td>expected 20.0</td></tr>
+</table>
+<p>For reference, the SPI transfer alone is 16 bits at 20 MHz = 0.8 µs. <span class="todo">[Figure 6: GPIO 2 on the scope.]</span></p>
+
+<h3>4.2 Accuracy</h3>
+<table>
+<tr><th>Slider</th><th>Expected frequency</th><th>Measured frequency</th><th>Error</th></tr>
+<tr><td>Bottom</td><td>~0 Hz</td><td><span class="todo">___</span></td><td><span class="todo">___</span></td></tr>
+<tr><td>Middle</td><td><span class="todo">___</span></td><td><span class="todo">___</span></td><td><span class="todo">___</span></td></tr>
+<tr><td>Top</td><td>~10 000 Hz</td><td><span class="todo">___</span></td><td><span class="todo">___</span></td></tr>
+</table>
+<p>Output amplitude: <span class="todo">___ V</span> peak-to-peak (full scale is 2.048 V at 1× gain).</p>
+
+<h3>4.3 Scope display of a swoop</h3>
+<p><span class="todo">[Figure 7: scope at 10–20 ms/div, single-shot trigger, one recorded swoop played back. Annotate rise, sustain, fall, or explain their absence (see §2.1).]</span></p>
+
+<h3>4.4 Playback speed</h3>
+<p><span class="todo">[Record a timed sweep (e.g. 2 s → ~200 samples), then measure the playback on the scope. Expected ~200 ms for 10×. Each sample waits at least 1 ms plus scheduling, so playback may run slightly slower than exactly 10×; report the measured ratio.]</span></p>
+
+<h3>4.5 Spectrogram</h3>
+<p><span class="todo">[Figure 8: spectrogram of the MCU's output, such as our Fig. 2 imitation played back through compose mode. Say how it was captured (aux cable or speaker to mic, sample rate, window length). Compare with the handout's Fig. 2: frequency range, durations, gaps. Did Merlin identify it?]</span></p>
+
+<h3>4.6 What worked well, what didn't, what's unique</h3>
+<ul>
+<li class="todo">[Well: e.g. recordings persist across modes; 10× speed-up without raising pitch]</li>
+<li class="todo">[Poorly: e.g. stepped waveform near 10 kHz; clicks at note edges without an envelope; anything from the demo]</li>
+<li class="todo">[Unique: anything about our approach]</li>
+</ul>
+
+<h2>5. Conclusions</h2>
+<p class="todo">[Usability. What we learned: interrupts and timing budgets, DDS, sharing state between an ISR and threads, debouncing. The biggest lesson from the bugs (one fact in two places). What we'd do differently, e.g. check the frequency range against the spec when integrating rather than a week later. Comments or suggestions on the lab.]</p>
+
+<h2>6. Answers to lab questions</h2>
+<p class="note">The current Lab 1 page asks no specific questions, so this section answers the prep-sheet questions (2021 PIC32 version). Check with a TA whether that is expected, or drop the section.</p>
+<p><b>Q1. Maximum current per I/O pin and in total.</b> The PIC32 datasheet gives a per-pin limit and a smaller total limit. On the RP2350, GPIO drive strength is configurable at 2, 4, 8 or 12 mA, and the whole board is limited by the Pico's 3.3 V regulator. Either way, a GPIO drives a signal, not a load.</p>
+<p><b>Q2. What hardware do protothreads use?</b> On the RP2040/RP2350 the library uses the free-running 64-bit system timer through <code>time_us_64()</code> and claims no hardware alarm, so alarm 0 is free for the audio ISR. The PIC32 version claimed a timer.</p>
+<p><b>Q3. Timer period for 44 kHz from 40 MHz, prescaler 1.</b> 40 000 000 / 44 000 = 909.09 → 909 cycles. On the RP2350 we set the period directly: 1/50 000 = 20 µs.</p>
+<p><b>Q4. DDS frequency resolution with a 32-bit accumulator.</b> <i>F</i><sub>s</sub>/2³² = 44 000/2³² ≈ 1.02 × 10⁻⁵ Hz (our 50 kHz gives 1.16 × 10⁻⁵ Hz).</p>
+<p><b>Q5. Alternatives to a linear amplitude ramp.</b> Exponential (sounds natural, costs a multiply, never quite reaches zero); raised cosine (smooth everywhere, needs a table); ADSR (expressive, four parameters to tune); Gaussian (least spectral spread, no flat sustain). Any abrupt change in amplitude spreads energy across all frequencies, heard as a click and seen as a vertical smear on a spectrogram.</p>
+
+<h2>References</h2>
+<ol>
+<li>V. Hunter Adams, "Synthesizing Birdsong," ECE 4760 Lab 1. vanhunteradams.com/Pico/Birds/Birdsong.html</li>
+<li>Microchip, MCP4802/4812/4822 datasheet. vanhunteradams.com/Pico/Birds/DAC.pdf</li>
+<li>CUI Devices, SJ1-355xNG 3.5 mm audio jack datasheet (linked from the lab page).</li>
+<li>B. Land, "RP2040 program/reset button." people.ece.cornell.edu/land/courses/ece4760/RP2040/hardware/index_pgm_button.html</li>
+<li>V. Hunter Adams, "Keypad." vanhunteradams.com/Pico/Keypad/Keypad.html</li>
+<li>V. Hunter Adams, RP2040 demo code: Audio/a_Timer_Interrupt_DDS_Demo, ADC/Simple_Demo, Human_Input/Keypad. github.com/vha3/Hunter-Adams-RP2040-Demos</li>
+</ol>
+
+<h2>Appendix A: Code listing</h2>
+<p class="todo">[Paste the final birdsong code in a monospace font, with more comments than it has now ("heavily commented" is required). Mark every AI-originated block the way adc_to_phase_incr() already is.]</p>
+
+<h2>Appendix B: AI prompt log</h2>
+<p class="note">The handout asks for words exchanged and the number of additions/deletions/modifications suggested and accepted. Counts below are from our Claude Code transcripts; check them.</p>
+<table>
+<tr><th>Date</th><th>Prompts</th><th>Our words</th><th>Claude's words</th><th>Work</th></tr>
+<tr><td>Sep 4</td><td>16</td><td>525</td><td>10 495</td><td>toolchain setup, prep questions</td></tr>
+<tr><td>Sep 10</td><td>46</td><td>5 381</td><td>20 606</td><td>code review and bug fixes</td></tr>
+<tr><td>Sep 11</td><td>40</td><td>2 056</td><td>15 021</td><td>week 3 features (not used in the submitted code)</td></tr>
+</table>
+<p>"Our words" includes handout text pasted into prompts.</p>
+<p><b>AI code changes and whether they are in the submitted code</b> (lines added / removed):</p>
+<table>
+<tr><th>Change</th><th>+/−</th><th>In submitted code?</th></tr>
+<tr><td>Bugs 1–2: static protothread state, arrays sized 10</td><td>+10 −3</td><td>yes</td></tr>
+<tr><td>Bugs 3–4: mode gate, tone on at boot, key 0 toggle</td><td>+15 −4</td><td>yes</td></tr>
+<tr><td>Bugs 5–12: <code>adc_to_phase_incr()</code>, mid-scale mute, record-mode restructure, playback interruptible, single LED owner, comment fixes</td><td>+52 −62</td><td>yes</td></tr>
+<tr><td><code>?:</code> replaced with <code>if/else</code></td><td>+10 −2</td><td><span class="todo">[partly?]</span></td></tr>
+<tr><td>Amplitude envelope; compose mode; playback timing</td><td><span class="todo">[fill]</span></td><td>no</td></tr>
+</table>
+<p class="todo">[Totals: suggested ___ / accepted into the submitted code ___. Add the list of prompts and responses: notes/lab-notebook.md §11 in the repo.]</p>
+
+</body></html>
