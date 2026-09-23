@@ -581,6 +581,24 @@ Tool: Claude (Claude Code), used in sessions on 2026-09-04, 2026-09-10,
 git log --format='%h %s %(trailers:key=Co-Authored-By,valueonly)'
 ```
 
+### Words exchanged
+
+Counted from the Claude Code session transcripts for this repo
+(`~/.claude/projects/-Users-ninaiscool-Developer-Active-ECE4760*`), each message
+counted once, dates in local time. "Your words" includes text pasted into
+prompts, such as the handout, so it overstates what was typed. Claude's words
+count only its replies, not code it wrote to files; code is counted in the line
+tables below.
+
+| Date | Prompts | Your words | Claude's words | Work |
+| --- | --- | --- | --- | --- |
+| 2026-09-04 | 16 | 525 | 10 495 | toolchain setup, prep questions |
+| 2026-09-10 | 46 | 5 381 | 20 606 | code review, bug fixes, envelope |
+| 2026-09-11 | 40 | 2 056 | 15 021 | compose mode, 10× playback, cardinal presets, timing |
+| 2026-09-20 | 1 | 10 | 109 | repo housekeeping |
+| 2026-09-23 | 8 | 3 982 | 2 950 | repo tidy, report prep (not code generation) |
+| **Total** | **111** | **11 954** | **49 365** | |
+
 ### Code changes to `Lab1_Birdsong/birdsong.c`
 
 | Commit | Lines | Author | What |

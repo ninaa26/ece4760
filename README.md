@@ -22,6 +22,7 @@ ece4760/
 ├── Lab1_Birdsong_NoEnvelope/   same build minus the envelope, for ISR timing
 ├── notes/
 │   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
+│   ├── lab1-requirements.md   handout requirements and report checklist
 │   └── figures/            scope traces and photos for the report
 ├── build.sh                cmake/ninja wrapper — build tooling, not lab code
 ├── flash.sh                build, wait for the bootloader drive, copy the .uf2
