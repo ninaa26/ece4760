@@ -1,6 +1,6 @@
 # ECE 4760 / 5730
 
-Course work for Digital Systems Design Using Microcontrollers (Cornell, Fall 2025).
+Course work for Digital Systems Design Using Microcontrollers (Cornell, Fall 2026).
 Board: Raspberry Pi Pico 2 (RP2350).
 
 Field guide (setup, concepts, wiring diagrams, week-by-week walkthrough):
@@ -11,17 +11,21 @@ https://claude.ai/code/artifact/bb80ce5d-de5f-4b22-81be-ca5ed6dc881d
 ```
 ece4760/
 ├── Lab1_Birdsong/          the lab project
-│   ├── birdsong.c          all of the lab code — the only file you edit
+│   ├── birdsong.c          the lab code — DDS ISR, keypad, record / play / compose
+│   ├── northern_cardinal.{c,h}, cardinal_data.h   presets for keys 1–9
 │   ├── CMakeLists.txt      build recipe: sources and SDK libraries
 │   ├── pt_cornell_rp2040_v1_4.h   protothreads (Bruce Land), unmodified
 │   └── pico_sdk_import.cmake      SDK boilerplate, unmodified
+├── Lab1_Birdsong_NoEnvelope/   same build minus the envelope, for ISR timing
+├── Audio_Timer_Interrupt_DDS/  early standalone keypad + ADC DDS sketch
 ├── notes/
 │   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
 │   └── figures/            scope traces and photos for the report
 ├── build.sh                cmake/ninja wrapper — build tooling, not lab code
+├── flash.sh                build, wait for the bootloader drive, copy the .uf2
 ├── tools/
 │   └── birdcall-spectrogram/   the bench half of Lab 1 — see below
-├── docs/                   field guide, prep and fix log, recovered from Artifacts
+├── docs/                   field guide, prep, fix log, bench notes (see docs/DOCS.md)
 └── README.md
 ```
 
@@ -82,10 +86,13 @@ enter the bootloader, so the cable never has to come out.
 
 | Key | Does |
 | --- | --- |
-| `0` | tone generator on / off |
+| `0` | tone generator on / off; also cancels record, playback and compose |
 | `*` | arm recording for the next key pressed |
-| `1`–`9` | while armed: record. Otherwise: play that key back |
-| `#` | unused (compose mode, week 3) |
+| `1`–`9` | while armed: record. While composing: add to the phrase. Otherwise: play that key back |
+| `#` | compose mode: first press starts a phrase, second press plays it |
+
+Keys 1–9 power up holding Northern Cardinal presets (syllables on 1–6, full
+songs on 7–9). Recording over a key replaces its preset.
 
 Recording a swoop: tap `*`, press and hold a key, sweep the slider, release.
 Playing it: tap that key. Recordings persist until deliberately overwritten.

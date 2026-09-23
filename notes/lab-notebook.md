@@ -1,6 +1,6 @@
 # Lab notebook — Lab 1, Synthesizing Birdsong
 
-ECE 4760, Cornell, Fall 2025
+ECE 4760, Cornell, Fall 2026
 Group members: ___
 Board: Raspberry Pi Pico 2 / RP2350
 Repo: https://github.com/ninaa26/ece4760
@@ -142,10 +142,13 @@ what the prep sheet's question 2 is pointing at.)
 
 | Key | Action |
 | --- | --- |
-| `0` | tone generator on / off |
+| `0` | tone generator on / off; also cancels record, playback and compose |
 | `*` | arm recording for the next key pressed |
-| `1`–`9` | while armed: record. Otherwise: play that key back |
-| `#` | unused — compose mode, week 3 |
+| `1`–`9` | while armed: record. While composing: add to the phrase. Otherwise: play that key back |
+| `#` | compose mode: first press starts a phrase, second press plays it |
+
+Keys 1–9 power up holding Northern Cardinal presets (syllables on 1–6, full
+songs on 7–9). Recording over a key replaces its preset.
 
 Recording a swoop: tap `*`, press and hold a key, sweep the slider, release.
 Playing it: tap that key. Recordings persist until deliberately overwritten.
@@ -671,7 +674,7 @@ Breadboard from directly above, with the keypad and potentiometer in place.
 
 - [x] ~~Amplitude envelope~~ — done, 5 ms linear attack and decay
 - [ ] Playback at 8–10× speed (advance the index by 8 instead of 1)
-- [ ] `#` compose mode: record a key sequence, replay the phrase
+- [ ] `#` compose mode: record a key sequence, replay the phrase — implemented in code, not yet verified on the board
 - [ ] Re-measure ISR timing now that the envelope is in
 - [ ] 5730 only: external switch so the pot sets volume instead of frequency
 

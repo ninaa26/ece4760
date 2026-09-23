@@ -9,9 +9,8 @@ machine before.
 | `ECE4760_birdsong-prep.html` | Reading and prep before the first checkout | `claude.ai/artifact/MWLqeNPczgsAnhtANio1dQ` |
 | `ECE4760_birdsong-fix-log.html` | What broke and how it was fixed | `claude.ai/artifact/5PBSQ5JiMZSruygWWAZhkV` |
 
-The bench tool that produced the spectrograms for the writeup is
-`~/Developer/One_Off_Projects/birdcall-spectrogram` — it belongs with this
-repo and has not been moved yet.
+The bench tool that produced the spectrograms for the writeup lives in
+`tools/birdcall-spectrogram/` (moved from `One_Off_Projects` on 2026-09-21).
 
 ## From the Claude-NinaCN account
 
