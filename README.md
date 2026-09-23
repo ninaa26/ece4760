@@ -95,8 +95,8 @@ enter the bootloader, so the cable never has to come out.
 | `1`–`9` | while armed: record. While composing: add to the phrase. Otherwise: play that key back |
 | `#` | compose mode: first press starts a phrase, second press plays it |
 
-Keys 1–9 power up holding Northern Cardinal presets (syllables on 1–6, full
-songs on 7–9). Recording over a key replaces its preset.
+Keys 1–9 power up holding Northern Cardinal presets: 2.2 s pitch tracks of real
+recordings — songs on 1–4, a duet on 5, calls on 6–9. Recording over a key replaces its preset.
 
 Recording a swoop: tap `*`, press and hold a key, sweep the slider, release.
 Playing it: tap that key. Recordings persist until deliberately overwritten.

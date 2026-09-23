@@ -152,8 +152,8 @@ what the prep sheet's question 2 is pointing at.)
 | `1`–`9` | while armed: record. While composing: add to the phrase. Otherwise: play that key back |
 | `#` | compose mode: first press starts a phrase, second press plays it |
 
-Keys 1–9 power up holding Northern Cardinal presets (syllables on 1–6, full
-songs on 7–9). Recording over a key replaces its preset.
+Keys 1–9 power up holding Northern Cardinal presets: 2.2 s pitch tracks of real
+recordings — songs on 1–4, a duet on 5, calls on 6–9. Recording over a key replaces its preset.
 
 Recording a swoop: tap `*`, press and hold a key, sweep the slider, release.
 Playing it: tap that key. Recordings persist until deliberately overwritten.
@@ -475,7 +475,7 @@ already far more than the lab can use. Sitting at 493 KB would leave almost
 nothing for the stack, and stack exhaustion does not announce itself.
 
 Raised to 2500 in week 3: at 1 kHz playback, 1000 samples is only one second,
-and a full cardinal song on keys 7–9 lasts 2–3 seconds (Cornell Lab, All About
+and a full cardinal song lasts 2–3 seconds (Cornell Lab, All About
 Birds). 2500 gives 2.5 s of playback for 50 KB.
 
 ### Record-mode behaviour

@@ -1,43 +1,19 @@
 /**
- * northern_cardinal.h — real Northern Cardinal calls, transcribed
+ * northern_cardinal.h — real Northern Cardinal recordings as presets
  *
- * Preloads all nine recording slots with frequency contours shaped like a
- * cardinal's vocabulary. Keys 1-6 are single syllables; keys 7-9 are complete
- * multi-syllable songs with the silences built in.
+ * Preloads all nine recording slots with the pitch of a real cardinal: nine
+ * recordings from the Cornell Lab's All About Birds / Macaulay Library page
+ * (Common subspecies) - songs on keys 1-4, a duet on 5, calls on 6-9. For
+ * each, the dominant frequency of the densest 2.2 s was tracked once per
+ * millisecond and stored as the ADC value that reproduces it (cardinal_data.h).
+ * Zero means the bird was silent. Labels with recordist and year are in
+ * cardinal_labels[].
  *
  * This is an ADDITION, not a replacement. Recording over any key works exactly
  * as before and overwrites the preset; the lab's required record / playback /
  * compose path is untouched. At a demo, say which keys are presets and which
  * you recorded - a preset is not a recording, and the checkoff asks you to
  * record a sequence a TA invents on the spot.
- *
- * SOURCES
- *   V. Hunter Adams, "Synthesizing birdsong via Direct Digital Synthesis"
- *     https://vanhunteradams.com/Pico/Birds/Birdsong_synthesis.html
- *     swoop: 130 ms, y = -260*sin(-pi*x/5200) + 1740, i.e. 1740 -> 2000 -> 1740
- *     chirp: ~130 ms, "moves rapidly from low frequency to high frequency"
- *
- *   Birds of the World, "Northern Cardinal - Sounds and Vocal Behavior"
- *     https://birdsoftheworld.org/bow/species/norcar/cur/sounds
- *     8-10 song types built from 8-21 syllable types; pure-toned whistles,
- *     fundamentals roughly 1-8 kHz; syllables separated by silences under 1 s.
- *     Two measured song types from south-central Wisconsin:
- *       type A: "what" ~0.1 s ascending 2 -> 4 kHz,
- *               "cheer" ~0.6 s descending 6 -> 2 kHz
- *       type B: "what" ~0.5 s ascending 2 -> 4 kHz,
- *               "cheer" ~0.4 s descending 2.5 -> 1 kHz
- *
- *   Cornell Lab, All About Birds - Northern Cardinal Sounds
- *     https://www.allaboutbirds.org/guide/Northern_Cardinal/sounds
- *     a string of clear down-slurred or two-parted whistles, often speeding up
- *     and ending in a trill; songs last 2 to 3 seconds; a phrase is usually
- *     repeated 2-3 times.
- *
- *   ECE 4760 Lab 1 handout, Fig. 2 spectrogram: sweeps about 2 kHz to 7 kHz.
- *
- * The swoop and the two Wisconsin song types use the published figures. The
- * rest are shaped to the same ranges and are meant to be TUNED BY EAR against
- * the Merlin app - a starting point, not measured data.
  */
 
 #ifndef NORTHERN_CARDINAL_H
@@ -51,7 +27,7 @@ int         cardinal_call_key(int i);
 int         cardinal_call_ms(int i);      // total duration in milliseconds
 
 /**
- * Fill the recording slots with the synthesised calls.
+ * Fill the recording slots with the transcribed recordings.
  *
  * recordings   flat pointer to the [keys][max_samples] array
  * lengths      the per-key length array

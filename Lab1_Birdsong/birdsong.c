@@ -593,8 +593,8 @@ int main() {
          sin_table[ii] = float2fix15(2047*sin((float)ii*6.283/(float)sine_table_size));
     }
 
-    // Preload all nine keys with transcribed cardinal calls: single syllables
-    // on 1-6, complete songs on 7-9. Recording over any
+    // Preload all nine keys with 2.2 s pitch tracks of real cardinal
+    // recordings: songs on 1-4, a duet on 5, calls on 6-9. Recording over any
     // of them replaces the preset, so this changes nothing about how the lab's
     // record / playback / compose path behaves - it just means the keys are
     // not empty at power-on.
