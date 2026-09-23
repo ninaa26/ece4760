@@ -682,13 +682,13 @@ What is left is the report.
       sequence recorded and played back, no resets or reprogramming
 - [x] Amplitude envelope — 5 ms linear attack and decay
 - [x] `#` compose mode
+- [x] 10× playback speed (10 ms record rate, 1 ms playback rate)
 
 ### Open questions for the report
 
-- The code in this repo has no 8–10× playback speed-up and no 5730 volume
-  switch. Were they not needed, or does the checked-off version of
-  `birdsong.c` live somewhere else? The code listing in the report has to be
-  the code that was demoed.
+- The 10× playback speed-up is built in: recording samples every 10 ms,
+  playback every 1 ms. The report should say so explicitly.
+- There is no 5730 volume switch in this code. Only matters if enrolled in 5730.
 - ISR timing has not been re-measured with the envelope in (compare
   `Lab1_Birdsong` and `Lab1_Birdsong_NoEnvelope` on GPIO 2).
 
