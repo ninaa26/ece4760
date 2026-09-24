@@ -4,7 +4,9 @@ Course work for Digital Systems Design Using Microcontrollers (Cornell, Fall 202
 Board: Raspberry Pi Pico 2 (RP2350).
 
 **Status:** Lab 1 is checked off (weeks 1–3); the report is in progress.
-Lab 2 has started (week 1) and has no folder here yet.
+Lab 2 (Digital Galton Board): the field guide's Week 1 tab starts from a copy of
+the course Animation Demo in `Lab2_Galton/` and lists every edit, step by step.
+Lab 2 field guide (one tab per week): https://claude.ai/artifact/1DHuDbKJNWfoRbP3T7d65Z
 
 Field guide (setup, concepts, wiring diagrams, week-by-week walkthrough):
 https://claude.ai/code/artifact/bb80ce5d-de5f-4b22-81be-ca5ed6dc881d
@@ -13,6 +15,7 @@ https://claude.ai/code/artifact/bb80ce5d-de5f-4b22-81be-ca5ed6dc881d
 
 ```
 ece4760/
+├── CLAUDE.md               how to work in this repo (read by Claude in any account)
 ├── Lab1_Birdsong/          the lab project
 │   ├── birdsong.c          the lab code — DDS ISR, keypad, record / play / compose
 │   ├── northern_cardinal.{c,h}, cardinal_data.h   presets for keys 1–9
@@ -20,13 +23,18 @@ ece4760/
 │   ├── pt_cornell_rp2040_v1_4.h   protothreads (Bruce Land), unmodified
 │   └── pico_sdk_import.cmake      SDK boilerplate, unmodified
 ├── Lab1_Birdsong_NoEnvelope/   same build minus the envelope, for ISR timing
+├── Lab2_Galton/            Lab 2: the course Animation Demo, edited step by step (now at week 1 step 3)
 ├── notes/
 │   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
 │   ├── lab1-requirements.md   handout requirements and report checklist
+│   ├── lab2-status.md      Lab 2: where things stand and what's next (start here)
+│   ├── lab2-notebook.md    Lab 2 hardware, bench log, AI-use log
 │   └── figures/            scope traces and photos for the report
 ├── build.sh                cmake/ninja wrapper — build tooling, not lab code
 ├── flash.sh                build, wait for the bootloader drive, copy the .uf2
 ├── tools/
+│   ├── vga-test/           colour stripes + blinking LED: ./flash.sh tools/vga-test
+│   ├── lab2-guide/         builds and compile-checks the Lab 2 guide's code, step by step
 │   └── birdcall-spectrogram/   the bench half of Lab 1 — see below
 ├── docs/                   field guide, prep, fix log, bench notes (see docs/DOCS.md)
 └── README.md

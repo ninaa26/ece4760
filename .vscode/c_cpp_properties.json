@@ -1,0 +1,20 @@
+{
+  // Lets VS Code understand the Pico code: go-to-definition, hover help,
+  // and no false red squiggles. It reads the exact compiler settings from
+  // the last build, so build Lab 2 once (Cmd+Shift+B) before editing.
+  "version": 4,
+  "configurations": [
+    {
+      "name": "Pico 2 (RP2350)",
+      "compileCommands": "${workspaceFolder}/build/Lab2_Galton-pico2/compile_commands.json",
+      "compilerPath": "${env:HOME}/.pico-sdk/toolchain/14_2_Rel1/bin/arm-none-eabi-gcc",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${env:HOME}/Developer/pico-sdk/src/**"
+      ],
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-arm"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ machine before.
 | `ECE4760_birdsong-lab-field-guide.html` | The Lab 1 field guide — setup, concepts, wiring, week by week. 292 KB | `claude.ai/artifact/Q9v1QrQP72C46qsbcZYxvg` |
 | `ECE4760_birdsong-prep.html` | Reading and prep before the first checkout | `claude.ai/artifact/MWLqeNPczgsAnhtANio1dQ` |
 | `ECE4760_birdsong-fix-log.html` | What broke and how it was fixed | `claude.ai/artifact/5PBSQ5JiMZSruygWWAZhkV` |
+| `ECE4760_galton-lab-field-guide.html` | The Lab 2 field guide — parameters, wiring, one tab per week, report questions | `claude.ai/artifact/1DHuDbKJNWfoRbP3T7d65Z` |
 
 The bench tool that produced the spectrograms for the writeup lives in
 `tools/birdcall-spectrogram/` (moved from `One_Off_Projects` on 2026-09-21).

@@ -1,0 +1,10 @@
+{
+  // Build with the tasks (Cmd+Shift+B), not CMake Tools or the Pico
+  // extension's own build buttons, so every build matches ./build.sh.
+  "cmake.configureOnOpen": false,
+  "cmake.automaticReconfigure": false,
+  "files.associations": { "*.h": "c" },
+  // Hide build output and the course's untouched copies from search
+  "search.exclude": { "build": true, "Hunter-Adams-RP2040-Demos": true },
+  "files.trimTrailingWhitespace": false
+}

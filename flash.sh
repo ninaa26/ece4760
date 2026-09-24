@@ -3,6 +3,8 @@
 #
 #   ./flash.sh                  # builds Lab1_Birdsong and flashes it
 #   ./flash.sh Lab1_Birdsong_NoEnvelope
+#   ./flash.sh Lab2_Galton
+#   ./flash.sh tools/vga-test   # colour stripes + blinking LED, to test a VGA setup
 #
 # If the board is not in bootloader mode yet it waits for you, so you can run
 # this first and then double-press the reset button.
@@ -11,8 +13,17 @@ set -e
 ROOT="${0:A:h}"
 PROJ="${1:-Lab1_Birdsong}"
 
-"$ROOT/build.sh" "$PROJ" | tail -6
-UF2=$(ls "$ROOT/build/${PROJ}-pico2/"*.uf2 2>/dev/null | head -1)
+# Show the compiler's output in full if the build fails. Piping it through
+# tail used to hide the failure, and the previous .uf2 got flashed instead.
+if ! BUILD_LOG=$("$ROOT/build.sh" "$PROJ" 2>&1); then
+  echo "$BUILD_LOG"
+  echo
+  echo "BUILD FAILED. Nothing was flashed. The errors, first one first:"
+  echo "$BUILD_LOG" | grep -E ': (fatal )?error:' | head -5
+  exit 1
+fi
+echo "$BUILD_LOG" | tail -6
+UF2=$(ls -t "$ROOT/build/${PROJ:t}-pico2/"*.uf2 2>/dev/null | head -1)
 [[ -n "$UF2" ]] || { echo "no .uf2 was produced"; exit 1; }
 
 find_drive() {
@@ -51,6 +62,7 @@ if [[ -d "$DRIVE" ]]; then
 else
   echo
   echo "FLASHED. The drive ejected itself, which means the board is running it."
+  [[ "$PROJ" == Lab1_Birdsong* ]] || exit 0
   echo "  1  what-cheer-cheer-cheer   2.1 s   <- measured figures"
   echo "  2  what-cheer-cheer (low)    1.5 s   <- measured figures"
   echo "  3  cheer-cheer-cheer         2.0 s"
