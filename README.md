@@ -4,11 +4,13 @@ Course work for Digital Systems Design Using Microcontrollers (Cornell, Fall 202
 Board: Raspberry Pi Pico 2 (RP2350).
 
 **Status:** Lab 1 is checked off (weeks 1–3); the report is in progress.
-Lab 2 (Digital Galton Board): the field guide's Week 1 tab starts from a copy of
-the course Animation Demo in `Lab2_Galton/` and lists every edit, step by step.
-Lab 2 field guide (one tab per week): https://claude.ai/artifact/1DHuDbKJNWfoRbP3T7d65Z
+Lab 2 (Digital Galton Board) is in week 1: see `notes/lab2-status.md`.
+Working with Claude here (any account): see `CLAUDE.md`.
 
-Field guide (setup, concepts, wiring diagrams, week-by-week walkthrough):
+Lab 2 field guide (one tab per week, every week 1 edit shown step by step):
+https://claude.ai/artifact/1DHuDbKJNWfoRbP3T7d65Z
+
+Lab 1 field guide (setup, concepts, wiring diagrams, week-by-week walkthrough):
 https://claude.ai/code/artifact/bb80ce5d-de5f-4b22-81be-ca5ed6dc881d
 
 ## What is in here
@@ -16,20 +18,23 @@ https://claude.ai/code/artifact/bb80ce5d-de5f-4b22-81be-ca5ed6dc881d
 ```
 ece4760/
 ├── CLAUDE.md               how to work in this repo (read by Claude in any account)
-├── Lab1_Birdsong/          the lab project
-│   ├── birdsong.c          the lab code — DDS ISR, keypad, record / play / compose
-│   ├── northern_cardinal.{c,h}, cardinal_data.h   presets for keys 1–9
+├── Lab1_Birdsong/          the lab project — the code submitted with the report
+│   ├── birdsong.c          DDS ISR, keypad, record / play / compose
 │   ├── CMakeLists.txt      build recipe: sources and SDK libraries
 │   ├── pt_cornell_rp2040_v1_4.h   protothreads (Bruce Land), unmodified
 │   └── pico_sdk_import.cmake      SDK boilerplate, unmodified
-├── Lab1_Birdsong_NoEnvelope/   same build minus the envelope, for ISR timing
+├── Lab1_Birdsong_Cardinal/    personal extension, not submitted: envelope,
+│                               cardinal presets on keys 1–9
+├── Lab1_Birdsong_NoEnvelope/   the personal version minus its envelope
 ├── Lab2_Galton/            Lab 2: the course Animation Demo, edited step by step (now at week 1 step 3)
 ├── notes/
 │   ├── lab-notebook.md     measurements, design decisions, bug log, prompt log
 │   ├── lab1-requirements.md   handout requirements and report checklist
+│   ├── report-guide.md     what the professor's example reports do, and our gaps
+│   ├── report/             report draft source (HTML → .docx)
 │   ├── lab2-status.md      Lab 2: where things stand and what's next (start here)
 │   ├── lab2-notebook.md    Lab 2 hardware, bench log, AI-use log
-│   └── figures/            scope traces and photos for the report
+│   └── figures/            scope traces and photos; diagrams/ has the drawn figures
 ├── build.sh                cmake/ninja wrapper — build tooling, not lab code
 ├── flash.sh                build, wait for the bootloader drive, copy the .uf2
 ├── tools/
@@ -97,13 +102,14 @@ enter the bootloader, so the cable never has to come out.
 
 | Key | Does |
 | --- | --- |
-| `0` | tone generator on / off; also cancels record, playback and compose |
+| `0` | tone generator on / off |
 | `*` | arm recording for the next key pressed |
 | `1`–`9` | while armed: record. While composing: add to the phrase. Otherwise: play that key back |
 | `#` | compose mode: first press starts a phrase, second press plays it |
 
-Keys 1–9 power up holding Northern Cardinal presets (syllables on 1–6, full
-songs on 7–9). Recording over a key replaces its preset.
+The personal version in `Lab1_Birdsong_Cardinal/` also preloads keys 1–9 with
+Northern Cardinal recordings and adds a 5 ms envelope. It is not part of the
+submission.
 
 Recording a swoop: tap `*`, press and hold a key, sweep the slider, release.
 Playing it: tap that key. Recordings persist until deliberately overwritten.
