@@ -154,6 +154,44 @@ Findings, in order:
 Ideas for week 3 (not tried): ramp the target instead of stepping it, or
 limit how fast the I term can grow, to tame the +30 overshoot.
 
+## Stable range and settling times (23 Oct, for the report)
+
+Gains Kp 100, Kd 12, Ki 80, cap 4500, trial firmware. Each chunk starts from
+hanging and steps through targets 10–20 deg apart, 6 s each, no stopping
+(`pid-trial.py --targets=...`). Settled = stays within 3 deg of its final angle.
+Motor = average command over the last 3 s. 0 IMU errors in every run.
+
+| Step | Holds at | Wobble | Overshoot | Settle | Motor |
+| --- | --- | --- | --- | --- | --- |
+| hang → −70 | −70.3 | ±0.4 | 0.4 | 0.4 s | 461 |
+| −70 → −60 | −60.5 | ±0.2 | 0 | 0.4 s | 1068 |
+| −60 → −50 | −50.7 | ±0.1 | 0 | 0.5 s | 1819 |
+| −50 → −40 | −40.3 | ±0.3 | 0.3 | 0.8 s | 2467 |
+| −40 → −30 | −30.4 | ±0.4 | 0.7 | 0.4 s | 2974 |
+| hang → −20 | −22.3 (still creeping) | ±0.5 | 0 | 2.8 s | 3280 |
+| −20 → −10 | −10.1 | ±0.5 | 1.1 | 0.4 s | 3651 |
+| −10 → 0 | −0.1 | ±0.7 | 1.3 | 0.7 s | 3850 |
+| 0 → +10 | +10.9 | ±0.5 | 5.3 | 2.1 s | 3530 |
+| +10 → +20 | +20.9 | ±0.4 | 8.2 | 2.1 s | 3244 |
+| hang → 0 | −2.2 (still creeping) | ±0.5 | 3.2 | 2.7 s | 3490 |
+| 0 → +20 | +21.2 | ±0.6 | 12.9 | 2.2 s | 3032 |
+| +20 → +30 | +29.8 | ±0.3 | 0.6 | 0.9 s | 3477 |
+| +30 → +40 | +41.4 | ±0.3 | 17.7 (peak +57.7) | 2.5 s | 2360 |
+| +40 → +50 | +49.7 | ±0.2 | 0.4 | 1.0 s | 3033 |
+
+- **Stable over the whole tested range, −70 to +50 deg**, with one set of
+  gains: every target held within about 1 deg (wobble ≤ ±0.7). Below −70 the
+  arm is resting near its stop (−77); above +50 wasn't tried because the +40
+  step already overshot to +57.7, close to the Pico's +60 cutoff.
+- Small steps below level settle in under 1 s with almost no overshoot.
+  Big climbs from hanging take 2.5–3 s and are still creeping up after 6 s
+  (I catching up).
+- **Upward steps above level overshoot**, and the amount alternates (13, 0.6,
+  18, 0.4 deg). The holding power above level is also irregular (3477 at +30,
+  2360 at +40, 3033 at +50, where it should fall smoothly). Likely I carrying
+  over between steps plus hinge friction. This is the main thing left to fix
+  (ramped target or limited I growth), then re-run this table.
+
 ## Next steps
 
 1. Final check with the corrected test build: hanging ≈ −90, level ≈ 0,
