@@ -29,6 +29,7 @@ ap.add_argument("--targets", default="0", help="comma list, held --secs each, no
 ap.add_argument("--secs", type=float, default=12)
 ap.add_argument("--cap", type=int, default=6000, help="highest motor command (0-6000)")
 ap.add_argument("--manual", type=int, help="open loop: set this duty instead of PID")
+ap.add_argument("--sramp", type=float, default=0, help="ramp only on the fresh start, until the first target is reached (0 = off)")
 ap.add_argument("--ramp", type=float, default=0, help="target slides at this many deg/s (0 = jump)")
 ap.add_argument("--iband", type=float, default=0, help="only add up I within this many deg (0 = always)")
 ap.add_argument("--clamp", type=int, default=0, help="1 = don't add up I while the output is at its limit")
@@ -162,7 +163,7 @@ def metrics(seg, target):
 
 
 result = dict(kp=args.kp, kd=args.kd, ki=args.ki, cap=args.cap, manual=args.manual,
-              ramp=args.ramp, iband=args.iband, clamp=args.clamp, ff=args.ff,
+              ramp=args.ramp, sramp=args.sramp, iband=args.iband, clamp=args.clamp, ff=args.ff,
               targets=args.targets, secs=args.secs, when=time.strftime("%H:%M:%S"))
 segments, why = [], ""
 try:
@@ -176,6 +177,8 @@ try:
     result["note"] = why
     send("x", args.cap)
     send("r", args.ramp)
+    if args.sramp:
+        send("u", args.sramp)
     send("b", args.iband)
     send("c", args.clamp)
     send("f", args.ff)

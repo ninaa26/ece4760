@@ -5,7 +5,7 @@ what they showed are in `notes/lab3-status.md`.
 
 | File | What it is |
 | --- | --- |
-| `firmware-trial/` | Week 2 code (group repo, `week2_IMU_Demo`) plus test-only additions: streams `L,<ms>,<angle>,<target>,<motor>,<rate>,<pid_on>,<imu_errors>,<cap>,<aim>` at 20 Hz, counts failed IMU reads (and keeps the last good values), cuts the motor above +60 deg. Extra commands: `x` motor cap, `r` target ramp (deg/s), `b` I band (deg), `c` I clamp (0/1), `f` feedforward gain (adds f·cos(aim)^1.8). All off by default |
+| `firmware-trial/` | Week 2 code (group repo, `week2_IMU_Demo`) plus test-only additions: streams `L,<ms>,<angle>,<target>,<motor>,<rate>,<pid_on>,<imu_errors>,<cap>,<aim>` at 20 Hz, counts failed IMU reads (and keeps the last good values), cuts the motor above +60 deg. Extra commands: `x` motor cap, `r` target ramp (deg/s), `b` I band (deg), `c` I clamp (0/1), `f` feedforward gain (adds f·cos(aim)^1.8; I may then go below 0), `u` startup ramp (deg/s, only from a fresh start until the first target is reached; `--sramp`). All off by default |
 | `trial.sh` | Runs `pid-trial.py` and prints just the trace and one summary line per target |
 | `pid-trial.py` | Runs **one** experiment (gains, cap, target or target sequence, or open-loop duty) from a hanging start, prints a trace and the metrics, appends to `/tmp/pid-trials.jsonl`. For trying things one at a time |
 | `firmware-sweep/` | Earlier version: 7-field stream, no error counter or cap |

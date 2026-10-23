@@ -208,6 +208,41 @@ so an upward step gets ~900 too much. Next: **feedforward**
 `tools/pid-tuning/firmware-trial` (`f` command), **not yet run**. Details and
 the exact next commands: `notes/lab3-handover.md`.
 
+## Feedforward trials (23 Oct, second session)
+
+Firmware changes in `tools/pid-tuning/firmware-trial`: with feedforward on, I
+may go down to −ff_gain (it has to subtract when the guess is too high); new
+`u` command (`--sramp`): ramp the aim point only on a fresh start, until the
+first target is reached. Kp 100 Ki 80 cap 4500, 6 s per target unless noted.
+
+Sanity trial first (no FF, target 0, 14 s): final +0.1, overshoot 1.6, settle
+4.0 s, motor_tail **3562** (last session 3850: motor stronger after cooling
+overnight). So FF gain 3550, not 3850.
+
+| Run | Kd | Startup overshoot | Step overshoots (settle) |
+| --- | --- | --- | --- |
+| FF 3550, 0 → 30 → 40 | 12 | 53.8 (real, gyro saturated at ±250) | +30: **1.2** (2.2 s); +40: 9.6 (1.3 s) |
+| FF 3550, ramp 60 always, 0 → 30 → 40 | 12 | 3.2 | +30: 15.3 (2.8 s); +40: 0.1 (1.8 s) |
+| FF 3550, −30 → 0 → 30 | 12 | 20.3 past −30 | 0: 1.1 (0.97 s); +30: 6.8 (1.5 s) |
+| FF 3550, startup ramp 60, 0 → 30 → −30 → 0 | 12 | 3.0 (settle 1.4 s) | +30: 13.9 (2.1 s); −30: 6.3 (0.9 s); 0: 3.0 (0.5 s) |
+| same | 16 | 3.7 | +30: 10.2 (2.2 s); then the motor cable came loose |
+
+What we learned:
+
+- FF fixes most of it: every step settles in ≤ 2.8 s (handout: 5 s).
+- The startup from hanging needs the startup ramp; without it the arm flies
+  20–54 deg past the target (full power plus the full FF at once, and the
+  gyro saturates so D can't brake properly).
+- 0 → +30 still overshoots by a variable amount (1.2 to 15.3 deg in 5 runs).
+  Hold power at 0 depends on the direction the arm came from (≈2470 after
+  coming down, ≈3560–3825 coming up): hinge friction. Kd 16 helped a little.
+- After the loose-cable run (about 10 s asking for 4500 with no motor), the
+  motor board was hot and 4500 only lifted the arm to about −27 deg.
+  Let it cool and re-run the sanity trial before trusting any numbers.
+
+Next: after cooling, sanity trial, then repeat the Kd 16 sequence; if +30
+still overshoots, try a lower Ki (40) with FF.
+
 ## Next steps
 
 1. Final check with the corrected test build: hanging ≈ −90, level ≈ 0,

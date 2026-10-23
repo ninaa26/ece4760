@@ -11,6 +11,6 @@ grep -E '^(No |Pico )' /tmp/trial-out.txt
 tail -1 /tmp/pid-trials.jsonl | python3 -c "
 import json,sys;d=json.loads(sys.stdin.read())
 for s in d['segments']:
-    print('Kp',d['kp'],'Kd',d['kd'],'Ki',d['ki'],'cap',d['cap'],'ramp',d.get('ramp'),'band',d.get('iband'),
+    print('Kp',d['kp'],'Kd',d['kd'],'Ki',d['ki'],'cap',d['cap'],'ramp',d.get('ramp'),'sramp',d.get('sramp'),'band',d.get('iband'),
           'clamp',d.get('clamp'),'ff',d.get('ff'),'->',s['target'],
           {k:s[k] for k in ('final','wobble','drift','overshoot','rise','settle','min_angle','max_angle','motor_tail','at_cap','imu_errors','abort')})"
