@@ -22,7 +22,7 @@ then `notes/lab3-status.md` (all measurements, in order).
 | What | Where |
 | --- | --- |
 | This repo (notes, guide, tools) | `~/Developer/Active/ECE4760` (GitHub `ninaa26/ece4760`, public). Lab 3 work on branch `claude/lab-3-intro-artifacts-a18385`, merged to `main` |
-| **The group's code** | `~/Developer/Active/RP2350-final` (GitHub `sharonxrzhu/RP2350-projects-for-ECE4760`), folder `PID_Helicopter/` |
+| **The group's code** | `~/Developer/Active/RP2350-final` (the group's GitHub repo: `git -C ~/Developer/Active/RP2350-final remote -v`), folder `PID_Helicopter/` |
 | Week 2 code (the real one) | `PID_Helicopter/week2_IMU_Demo/imu_demo.c` in the group repo |
 | Hover test tool | `PID_Helicopter/week2_hover_test/` (type a duty, prints angle) + `serial_terminal.py` |
 | Tuning tools | `tools/pid-tuning/` in this repo (README there) |
