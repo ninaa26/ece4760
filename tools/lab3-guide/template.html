@@ -1,0 +1,853 @@
+<title>Helicopter Lab Field Guide</title>
+<meta name="description" content="ECE 4760 Lab 3 on the Pico 2: overview, wiring, and weeks 1 and 2 step by step, from the course PWM and IMU demos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+{{CSS}}
+/* ---- Lab 3 additions ---- */
+.bigidea b:not(:first-child),.simple b:not(:first-child){display:inline;font-family:inherit;font-size:inherit;letter-spacing:0;text-transform:none;color:inherit;margin:0;font-weight:600}
+svg .side-a{fill:var(--accent-soft)}
+svg .side-b{fill:var(--warn-soft)}
+svg .opto{fill:none;stroke:var(--ink-2);stroke-width:1.2;stroke-dasharray:5 4}
+svg .sym{stroke:var(--ink);stroke-width:1.6;fill:none}
+svg .symf{fill:var(--ink)}
+svg .light{stroke:var(--warn);stroke-width:1.6;fill:none}
+svg .lightf{fill:var(--warn)}
+svg .arm{stroke:var(--ink);stroke-width:6;stroke-linecap:round}
+svg .armghost{stroke:var(--ink-3);stroke-width:4;stroke-linecap:round;stroke-dasharray:2 7}
+svg .tgt{stroke:var(--warn);stroke-width:1.8;fill:none;stroke-dasharray:6 5}
+svg .curve{stroke:var(--accent);stroke-width:2.2;fill:none}
+svg .boxf{fill:var(--paper);stroke:var(--rule-hard);stroke-width:1.2}
+svg .boxa{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+pre.term{background:#121517;color:#D7DDD9;border-color:#2B3134}
+pre.term .you{color:#8FBF7E}
+.cmds td:first-child{font-family:"JetBrains Mono",monospace;font-weight:700;white-space:nowrap}
+.lineno{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--accent-ink);background:var(--accent-soft);padding:1px 7px;border-radius:2px;white-space:nowrap}
+.fill{font-family:"JetBrains Mono",monospace;color:var(--warn)}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:4px 0 8px}
+.panels figure{margin:0}
+.panels .fig{padding:8px}
+.panels .fig svg{min-width:0;max-width:none}
+.fig svg.sys{min-width:760px;max-width:920px}
+.parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin:6px 0 24px}
+.parts figure{margin:0;min-width:0}
+.parts .fig{padding:8px}
+.parts .fig svg{min-width:0;max-width:none}
+.parts figcaption{font-size:12.5px;line-height:1.45}
+.parts figcaption b{display:block;color:var(--ink);font-size:13px;margin-bottom:2px}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="mast-id">
+      <div class="eyebrow">ECE 4760 · Lab 3 · Fall 2026</div>
+      <h1>PID <span>Helicopter</span></h1>
+    </div>
+    <div class="mast-meta">
+      <div>Board<b>Pico 2 · RP2350</b></div>
+      <div>Code<b>Lab3_Motor · Lab3_Helicopter</b></div>
+      <div>Updated<b>23 Oct 2026</b></div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Lab 3 sections">
+    <button role="tab" id="tab-overview" aria-controls="overview" aria-selected="true">Overview</button>
+    <button role="tab" id="tab-week1" aria-controls="week1" aria-selected="false"><span class="dot coded" aria-hidden="true"></span>Week 1</button>
+    <button role="tab" id="tab-week2" aria-controls="week2" aria-selected="false"><span class="dot coded" aria-hidden="true"></span>Week 2</button>
+  </nav>
+
+  <!-- ============================ OVERVIEW ============================ -->
+  <section class="panel" id="overview" role="tabpanel" aria-labelledby="tab-overview">
+    <h2>What you are building</h2>
+    <p class="lede">A one-direction helicopter. A small motor and propeller sit at the end of an arm that swings on a hinge. You type an angle, and the Pico runs the motor just hard enough to hold the arm there. A sensor on the arm (an IMU) measures the angle, a <b>PID controller</b> works out the motor power 1000 times a second, and the VGA screen plots the angle and the motor power live.</p>
+    <div class="bigidea"><b>The big idea</b> Think of holding a full glass of water at arm's length with your eyes open. Your eyes tell you where the glass is, your brain compares that with where you want it, and your arm pushes up a little more or less. That loop (measure, compare, push, repeat) is <b>feedback control</b>. Here the IMU is the eyes, the PID code is the brain, and the motor is the arm. PID is a recipe for "how hard to push": more if you're far off (P), more if you've been off for a while (I), and less if you're already moving fast toward the goal (D).</div>
+
+    <div class="note"><b>The handout is the spec.</b> Hunter Adams' handout (<a href="https://vanhunteradams.com/Pico/Helicopter/Helicopter.html">PID control of a 1D helicopter</a>) and the pages it links say what each week needs. Some of those pages still say RP2040; the same code runs on your Pico 2. The pins in this guide are the ones the course demos use. Where this guide and the handout disagree, the handout wins.</div>
+
+    <h3>The loop, in one picture</h3>
+    <div class="simple"><b>In simple words</b> Follow the arrows. Your target goes in at the top left. The Pico turns it into a motor power, the motor lifts the arm, the sensor on the arm measures the new angle, and that angle goes back into the controller. Round and round, every millisecond.</div>
+    <figure>
+      <div class="fig">
+        <svg viewBox="0 0 680 230" role="img" aria-label="Feedback loop: target angle to PID controller to PWM pin to motor board to motor and propeller, then IMU to complementary filter, and the angle back into the PID controller.">
+          <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="acc" d="M0 0 L10 5 L0 10 Z"/></marker></defs>
+          <rect class="boxf" x="10" y="30" width="130" height="58"/>
+          <text class="blkh" x="20" y="52">Target angle</text><text class="tiny" x="20" y="70">you type it (serial)</text>
+          <rect class="boxa" x="170" y="30" width="130" height="58"/>
+          <text class="blkh" x="180" y="52">PID controller</text><text class="tiny" x="180" y="70">in the 1 kHz interrupt</text>
+          <rect class="boxf" x="330" y="30" width="120" height="58"/>
+          <text class="blkh" x="340" y="52">PWM pin</text><text class="tiny" x="340" y="70">GP4, 1 kHz</text>
+          <rect class="boxf" x="480" y="30" width="180" height="58"/>
+          <text class="blkh" x="490" y="52">Motor board</text><text class="tiny" x="490" y="70">optoisolator + MOSFET</text>
+          <rect class="boxf" x="480" y="150" width="180" height="58"/>
+          <text class="blkh" x="490" y="172">Motor + propeller</text><text class="tiny" x="490" y="190">lifts the arm</text>
+          <rect class="boxf" x="330" y="150" width="120" height="58"/>
+          <text class="blkh" x="340" y="172">IMU on the arm</text><text class="tiny" x="340" y="190">I²C, GP8 + GP9</text>
+          <rect class="boxa" x="170" y="150" width="130" height="58"/>
+          <text class="blkh" x="180" y="172">Complementary</text><text class="blkh" x="180" y="190">filter → angle</text>
+          <path class="line" stroke-width="1.6" d="M140 59 H166" marker-end="url(#ar)"/>
+          <path class="line" stroke-width="1.6" d="M300 59 H326" marker-end="url(#ar)"/>
+          <path class="line" stroke-width="1.6" d="M450 59 H476" marker-end="url(#ar)"/>
+          <path class="line" stroke-width="1.6" d="M570 88 V146" marker-end="url(#ar)"/>
+          <path class="line" stroke-width="1.6" d="M480 179 H454" marker-end="url(#ar)"/>
+          <path class="line" stroke-width="1.6" d="M330 179 H304" marker-end="url(#ar)"/>
+          <path class="line" stroke-width="1.6" d="M235 150 V92" marker-end="url(#ar)"/>
+          <text class="tiny" x="243" y="124">angle (feedback)</text>
+          <text class="tiny" x="170" y="20">error = target − angle</text>
+        </svg>
+      </div>
+      <figcaption>The blue boxes are your code; the rest is hardware. The VGA screen shows the angle and the (smoothed) motor power so you can watch the loop work.</figcaption>
+    </figure>
+
+    <h3>Which way is which angle</h3>
+    <div class="simple"><b>In simple words</b> Angles are measured from level. Up is positive, down is negative. The arm starts hanging straight down, at −90°. The handout writes that as −1.57 radians (radians are another unit for angles: 90° is about 1.57).</div>
+    <figure>
+      <div class="fig">
+        <svg viewBox="0 0 560 300" role="img" aria-label="Side view of the arm on its hinge: level is 0 degrees, 30 degrees above level is plus 30, 30 below is minus 30, hanging straight down is minus 90.">
+          <circle class="symf" cx="160" cy="120" r="7"/>
+          <rect class="boxf" x="120" y="112" width="20" height="160"/>
+          <text class="tiny" x="96" y="290">stand</text>
+          <path class="armghost" d="M160 120 L300 39"/>
+          <path class="armghost" d="M160 120 L300 201"/>
+          <path class="armghost" d="M160 120 L160 270"/>
+          <path class="arm" d="M160 120 L330 120"/>
+          <rect class="symf" x="318" y="102" width="26" height="12" rx="2"/>
+          <path class="sym" d="M300 98 H362"/>
+          <text class="lbl ink" x="372" y="125">0° · level</text>
+          <text class="lbl ink" x="306" y="34">+30° · above</text>
+          <text class="lbl ink" x="306" y="214">−30° · below</text>
+          <text class="lbl ink" x="172" y="270">−90° · hanging (start)</text>
+          <rect class="boxa" x="196" y="128" width="30" height="10"/>
+          <text class="tiny" x="232" y="150">IMU on the arm</text>
+          <text class="tiny" x="420" y="60">motor + propeller</text>
+          <path class="line" d="M418 64 L346 104" stroke-width="1"/>
+        </svg>
+      </div>
+      <figcaption>Side view. The propeller blows down to lift the arm. Week 3's demo goes 0°, +30°, −30°, 0°.</figcaption>
+    </figure>
+
+    <h3>The three weeks</h3>
+    <p>The checkpoints build on each other: at week 2 you must also still meet everything from week 1. This guide covers weeks 1 and 2.</p>
+    <div class="weeks">
+      <div class="wk">
+        <h4>Week 1 <span class="chip todo">Not checked on the board</span></h4>
+        <span class="due">Checkoff: week of 10/19</span>
+        <p>Motor board soldered (on the PCB, not the breadboard). Arm assembled. Motor speed set from the serial terminal, open loop.</p>
+        <button data-go="week1">Open week 1 →</button>
+      </div>
+      <div class="wk">
+        <h4>Week 2 <span class="chip todo">Not checked on the board</span></h4>
+        <span class="due">Checkoff: week of 10/26</span>
+        <p>Angle and smoothed motor command plotted on the VGA screen. Closed-loop control (P alone is fine). Serial commands to set the gains.</p>
+        <button data-go="week2">Open week 2 →</button>
+      </div>
+      <div class="wk">
+        <h4>Week 3 <span class="chip na">Not in this guide yet</span></h4>
+        <span class="due">Demo: week of 11/2 (check Canvas)</span>
+        <p>Full PID, tuned. Button-triggered sequence: hang, 0°, +30°, −30°, 0°, 5 s apart. Stable over the whole range with one set of gains.</p>
+      </div>
+    </div>
+    <div class="note warn"><b>Dates.</b> 10/19 for week 1 comes from the course schedule used for Lab 2. Weeks 2 and 3 follow on weekly; check Canvas, since a holiday or schedule change would move them.</div>
+
+    <h3 id="parts">The parts, and what they look like</h3>
+    <div class="simple"><b>In simple words</b> Everything you'll handle in weeks 1 and 2, drawn so you can recognise it on the bench. Colours and shapes are typical; your exact parts may differ slightly, so trust the printed labels.</div>
+{{FIG parts}}
+
+    <h3 id="wiring-all">Everything wired together</h3>
+    <div class="simple"><b>In simple words</b> This is the whole setup at the end of week 2. Blue wires carry the Pico's small signals; orange wires carry the motor's power. They meet only inside the motor board, through the optoisolator's light. Week 1 is just the top-left part: laptop, adapter, Pico, motor board, supply, motor.</div>
+    <figure>
+      <div class="fig">{{FIG system}}</div>
+      <figcaption>The full Lab 3 system. Pin labels are physical pin · GPIO. Plug the VGA adapter in beside pins 21–27 exactly as in Lab 2.</figcaption>
+    </figure>
+    <div class="tbl"><table>
+      <thead><tr><th>From</th><th>To</th><th>Wire carries</th><th>Week</th></tr></thead>
+      <tbody>
+        <tr><td>Laptop USB</td><td>USB-serial adapter</td><td>your typing and the Pico's replies</td><td>1</td></tr>
+        <tr><td>Adapter RX · TX · GND</td><td>Pico pin 1 (GP0) · pin 2 (GP1) · pin 3 (GND)</td><td>serial, crossed over (TX to RX)</td><td>1</td></tr>
+        <tr><td>Pico pin 6 (GP4)</td><td>Motor board PWM terminal</td><td>the PWM signal (3.3 V)</td><td>1</td></tr>
+        <tr><td>Pico pin 8 (GND)</td><td>Motor board MCU GND terminal</td><td>return for the 4N35's LED</td><td>1</td></tr>
+        <tr><td>Supply 12 V + and −</td><td>Motor board 12V and POWER SUPPLY GROUND</td><td>gate drive, through the killswitch</td><td>1</td></tr>
+        <tr><td>Supply 5 V (or 5 V adapter)</td><td>Motor board barrel jack</td><td>motor power; confirm with the TA</td><td>1</td></tr>
+        <tr><td>Motor's two wires</td><td>MOTOR+ and MOTOR−</td><td>switched motor current; swap if it blows the wrong way</td><td>1</td></tr>
+        <tr><td>IMU VCC · GND</td><td>Pico pin 36 (3V3) · pin 13 (GND)</td><td>3.3 V power for the IMU</td><td>2</td></tr>
+        <tr><td>IMU SDA · SCL</td><td>Pico pin 11 (GP8) · pin 12 (GP9)</td><td>I²C data and clock</td><td>2</td></tr>
+        <tr><td>VGA adapter</td><td>Pico pins 21–27, then the VGA cable to the monitor</td><td>picture, as in Lab 2</td><td>2</td></tr>
+        <tr><td>Scope probe (optional)</td><td>pin 19 (GP14), pin 20 (GP15)</td><td>interrupt and frame timing</td><td>2</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Pin map</h3>
+    <div class="simple"><b>In simple words</b> Each pin has two numbers: its <b>physical number</b> (its place on the board, 1 to 40) and its <b>GPIO name</b> (what the code calls it, like GP4). <code>GP4 · 6</code> means GPIO 4, which is physical pin 6. Week 1 needs only the left-hand top part; week 2 adds the IMU, the VGA adapter and two scope test points.</div>
+    <figure>
+      <div class="fig">{{FIG pinmap}}</div>
+      <figcaption>Everything that connects to the Pico in Lab 3. The motor and its 12 V and 5 V supplies connect only to the motor board, never to the Pico: that separation is the point of the optoisolator.</figcaption>
+    </figure>
+    <div class="tbl"><table>
+      <thead><tr><th>Part</th><th>Pico pins (GPIO · physical)</th><th>Needed from</th></tr></thead>
+      <tbody>
+        <tr><td>USB-to-serial adapter</td><td>GP0 · 1 → adapter RX, GP1 · 2 → adapter TX, GND · 3</td><td>Week 1, step 0</td></tr>
+        <tr><td>Motor board, PWM + MCU GND terminals</td><td>GP4 · 6, GND · 8</td><td>Week 1, step 5</td></tr>
+        <tr><td>MPU6050 IMU</td><td>SDA → GP8 · 11, SCL → GP9 · 12, GND · 13, VCC → 3V3 · 36</td><td>Week 2, step 1</td></tr>
+        <tr><td>4760 VGA adapter board</td><td>plugs in beside 21–27 (GP16–GP21 + GND), as in Lab 2</td><td>Week 2, step 1</td></tr>
+        <tr><td>Scope test points</td><td>GP14 · 19 (toggles every interrupt), GP15 · 20 (toggles every frame)</td><td>Week 2 (optional)</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn"><b>Lab 2 leftovers.</b> If the Lab 2 DAC is still on your breadboard, unplug it: its chip-select was GP5, and the week 2 IMU demo drives GP5 as a PWM output. The rotary encoder isn't used in Lab 3.</div>
+
+    <h3>Build, flash and talk to it</h3>
+    <ol class="steps">
+      <li>Build only: <code>./build.sh Lab3_Motor</code> (week 1) or <code>./build.sh Lab3_Helicopter</code> (week 2).</li>
+      <li>Build and flash: <code>./flash.sh Lab3_Motor</code>, then unplug the Pico's USB, hold BOOTSEL, plug it back in. The script waits up to 2 minutes for the board.</li>
+      <li>Open the serial terminal: <code>ls /dev/tty.usbserial*</code> to find the adapter, then <code>screen /dev/tty.usbserial-XXXX 115200</code>. To quit <code>screen</code>: Ctrl-A, then K, then Y.</li>
+    </ol>
+    <div class="note"><b>Why the adapter.</b> The course's protothreads library reads and writes the Pico's <b>UART0</b> (GP0 and GP1) directly. Turning on USB serial in <code>CMakeLists.txt</code> would not help: the serial thread would still listen on GP1. Same lesson as Lab 1 (lab notebook, section 2).</div>
+
+    <h3>Reading</h3>
+    <p>The handout keeps its own page short and puts the background on these pages. They matter for the quiz.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Page</th><th>Read it for</th><th>Before</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://vanhunteradams.com/Pico/Helicopter/MotorCircuit.html">Motor circuit and PWM</a></td><td>The circuit you solder, why each part is there, how PWM is set up</td><td>Week 1</td></tr>
+        <tr><td><a href="https://vanhunteradams.com/Pico/ReactionWheel/Complementary_Filters.html">Complementary filters</a></td><td>How accelerometer and gyro combine into one angle</td><td>Week 2</td></tr>
+        <tr><td><a href="https://vanhunteradams.com/Pico/Helicopter/Display.html">Data display</a></td><td>What must be on screen, and the one-line low-pass filter</td><td>Week 2</td></tr>
+        <tr><td><a href="https://vanhunteradams.com/Protocols/I2C/I2C.html">I2C communication</a></td><td>How the Pico talks to the IMU, for debugging the link</td><td>Week 2</td></tr>
+        <tr><td><a href="https://vanhunteradams.com/PID/PID.html">PID, by watching it</a></td><td>What each gain does to the arm's motion: for tuning by eye</td><td>Week 2</td></tr>
+        <tr><td><a href="https://vanhunteradams.com/PID/PID_Analytical.html">PID, with the maths</a></td><td>Why it behaves that way</td><td>Week 3</td></tr>
+        <tr><td><a href="https://pip-assets.raspberrypi.com/categories/1214-rp2350/documents/RP-008373-DS-2-rp2350-datasheet.pdf">RP2350 datasheet</a></td><td>PWM and I2C chapters</td><td>As needed</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="foot">Written with Claude from the Fall 2026 handout and the course demos (GitHub, 21 Sep 2026). Every code listing compiled for the Pico 2; none has run on your board yet. Generated by <code>tools/lab3-guide/</code>.</div>
+  </section>
+
+  <!-- ============================ WEEK 1 ============================ -->
+  <section class="panel" id="week1" role="tabpanel" aria-labelledby="tab-week1" hidden>
+    <h2>Week 1 · Make the motor spin on command</h2>
+    <p class="lede">Checkoff: end of your lab section, week of 10/19. The handout asks for three things: the arm assembled, the motor board soldered on its printed circuit board (not a breadboard), and the motor's speed set from the PWM output, <b>open loop</b> (you choose the power; nothing measures the arm yet).</p>
+
+    <div class="note"><b>Where the code comes from.</b> You start from the course's <code>PWM/PWM_Demo</code> (your file is <code>pwm-demo.c</code>; in the group repo it's <code>PID_Helicopter/week1_PWM_Demo/pwm-demo.c</code>, the same unchanged demo). This week changes it in one small step. The change was written with Claude and compiled for the Pico 2; it hasn't run on your board yet. It goes in the report's AI prompt log (see Checkoff).</div>
+
+    <div class="legend">
+      <span><span class="op add">Add</span> type in the green lines</span>
+      <span><span class="op chg">Change</span> replace the red lines with the green ones</span>
+      <span><span class="l ctx inline">grey line</span> already in the file, just a landmark</span>
+    </div>
+    <div class="note"><b>Finding the spot.</b> Each edit's <b>Where</b> line ends with a line number, like <span class="lineno">right below line 55</span>. In VS Code the numbers run down the left edge; Ctrl+G (on a Mac too) jumps to a line. The numbers count from the unchanged demo and assume you've done the earlier edits in order: each edit adds lines and pushes later code down. If a number doesn't match, search (Cmd+F) for the grey or red line in the card instead.</div>
+
+    <nav class="stepnav" aria-label="Week 1 steps">
+      <a href="#w1-s0">0 · Set up</a>
+      <a href="#w1-s1">1 · Run the demo</a>
+      <a href="#w1-s2">2 · Motor off at start</a>
+      <a href="#w1-s3">3 · Solder the board</a>
+      <a href="#w1-s4">4 · Build the arm</a>
+      <a href="#w1-s5">5 · Spin the motor</a>
+      <a href="#w1-check">Checkoff</a>
+      <a href="#w1-words">Word list</a>
+    </nav>
+
+    <!-- STEP 0 -->
+    <div class="step" id="w1-s0">
+      <div class="step-h"><span class="step-n">Step 0</span><h3>Set up</h3></div>
+      <p>Goal: parts on the bench, your own copy of the demo, and a serial terminal that talks to the Pico.</p>
+      <div class="bigidea"><b>The big idea</b> This lab has two halves that must never share wires: the Pico (small, 3.3 V, delicate) and the motor (big currents, 12 V and 5 V, electrically noisy). Today you set up the Pico half and the way you'll talk to it.</div>
+      <h4>Gather</h4>
+      <p>Pictures of every part are in <a href="#parts">Overview → The parts</a>; the whole setup wired up is in <a href="#wiring-all">Everything wired together</a>.</p>
+      <ul class="tick">
+        <li>The Pico 2 on a breadboard and a USB cable.</li>
+        <li>A <b>USB-to-serial adapter</b> (ask the TA for the lab's one) and three jumper wires.</li>
+        <li>The motor-board kit: the printed circuit board and its parts (list in step 3). Soldering iron and solder at the bench.</li>
+        <li>The helicopter kit: arm, hinge and stand, motor, propeller.</li>
+        <li>The bench power supply (12 V and 5 V outputs, or as the TA hands out) and the oscilloscope.</li>
+      </ul>
+      <h4>Make your copy of the demo</h4>
+      <p>From the repo folder:</p>
+      <pre><code>cp -R Hunter-Adams-RP2040-Demos/PWM/PWM_Demo Lab3_Motor</code></pre>
+      <p>You only ever edit <code>Lab3_Motor/pwm-demo.c</code>. The protothreads header beside it is course code; leave it alone.</p>
+      <h4>Wire the serial adapter</h4>
+      <div class="simple"><b>In simple words</b> Serial is two one-way wires, like two people with a tin can each: one talks (TX, transmit) while the other listens (RX, receive). So the wires <b>cross over</b>: the Pico's TX goes to the adapter's RX, and the adapter's TX goes to the Pico's RX. Plus a ground wire so they agree on what "zero volts" is.</div>
+      <div class="tbl"><table>
+        <thead><tr><th>Pico</th><th>Adapter</th><th>Carries</th></tr></thead>
+        <tbody>
+          <tr><td><code>GP0 · 1</code> (UART0 TX)</td><td>RX</td><td>Pico → laptop: the prompts you read</td></tr>
+          <tr><td><code>GP1 · 2</code> (UART0 RX)</td><td>TX</td><td>laptop → Pico: what you type</td></tr>
+          <tr><td><code>GND · 3</code></td><td>GND</td><td>shared reference</td></tr>
+        </tbody>
+      </table></div>
+      <p>If the adapter also has a power wire (often red, 5 V), leave it unconnected: the Pico gets its power from its own USB cable.</p>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step" id="w1-s1">
+      <div class="step-h"><span class="step-n">Step 1</span><h3>Run the demo as it is</h3></div>
+      <p>Goal: prove the build, the flashing and the serial link work, and see PWM on the scope, with code you haven't touched. No motor yet.</p>
+      <div class="bigidea"><b>The big idea</b> <b>PWM</b> (pulse-width modulation) is how a pin that can only be fully on or fully off controls something "halfway". It flicks on and off very fast, and the motor feels the average. On 25 % of the time feels like a quarter of full power. It's like dimming a room by flicking the light switch faster than anyone can see.</div>
+      <h4>Change the code</h4>
+      <p class="tally">Nothing this step.</p>
+      <h4>Build, flash, connect</h4>
+      <p><code>./flash.sh Lab3_Motor</code>, then BOOTSEL. Open <code>screen</code> (Overview → Build, flash and talk to it). Press Enter once if the prompt isn't showing.</p>
+      <pre class="term"><code>input a duty cycle (0-6000): <span class="you">3000</span>
+input a duty cycle (0-6000): <span class="you">1500</span>
+input a duty cycle (0-6000): </code></pre>
+      <h4>Look at it on the scope</h4>
+      <p>Probe <code>GP4 · 6</code>, ground clip on a Pico GND.</p>
+      <div class="see"><b>You should see</b> a square wave repeating every 1 ms (1 kHz), between 0 and 3.3 V. Type 3000: high half the time. Type 1500: high a quarter of the time. Type 0: flat at 0 V. Note that it's already at half before you type anything: step 2 fixes that.</div>
+      <h4>How it works: the numbers</h4>
+      <div class="simple"><b>In simple words</b> The PWM hardware has a counter that counts up to 6000 and starts again, over and over. The pin is high while the count is below your number and low after. Your number out of 6000 is the fraction of time it's on.</div>
+      <div class="tbl"><table>
+        <thead><tr><th>Setting</th><th>In the code</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>System clock</td><td>150 MHz (Pico 2 default)</td><td>150 million ticks a second</td></tr>
+          <tr><td>Clock divider</td><td><code>CLKDIV 25.0f</code></td><td>counter steps 6 million times a second</td></tr>
+          <tr><td>Wrap value</td><td><code>WRAPVAL 6000</code></td><td>6000 steps = 1 ms, so <b>1 kHz</b></td></tr>
+          <tr><td>Level</td><td><code>pwm_set_chan_level(…, control)</code></td><td>on for <code>control</code>/6000 of each 1 ms</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Why only 1 kHz?</b> The optoisolator on the motor board (step 3) is slow: it can't switch cleanly much faster. The handout picks 1 kHz for that reason. It also suits the controller: the PWM's wrap interrupt fires once per period, so 1 kHz PWM gives a 1 kHz control loop for free in week 2.</p>
+      <p><b>The interrupt.</b> <code>on_pwm_wrap()</code> runs every time the counter wraps (every 1 ms). It clears its flag and, if you typed a new number, loads it. Changing the level only at the wrap means a pulse is never cut short halfway.</p>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step" id="w1-s2">
+      <div class="step-h"><span class="step-n">Step 2</span><h3>Start with the motor off</h3></div>
+      <p>Goal: the output is off when the Pico starts, and the Pico says back what you set. Do this before any motor is connected.</p>
+      <div class="bigidea"><b>The big idea</b> Safe by default. A propeller that starts spinning the instant the Pico gets power (say, while you're plugging in a cable with your hand near it) is the kind of surprise to design out early.</div>
+      <h4>Change the code</h4>
+      <p class="tally">{{TALLY 1 2}}</p>
+{{CARDS 1 2}}
+      <h4>Build and flash</h4>
+      <p><code>./flash.sh Lab3_Motor</code>, BOOTSEL, then reconnect <code>screen</code>.</p>
+      <pre class="term"><code>input a duty cycle (0-6000): <span class="you">600</span>
+duty 600 of 6000 = 10%
+input a duty cycle (0-6000): </code></pre>
+      <div class="see"><b>You should see</b> GP4 flat at 0 V on the scope straight after flashing. Type 600: the terminal answers <code>duty 600 of 6000 = 10%</code> and the scope shows a pulse 0.1 ms long every 1 ms.</div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step" id="w1-s3">
+      <div class="step-h"><span class="step-n">Step 3</span><h3>Solder the motor board</h3></div>
+      <p>Goal: the motor driver circuit built on its printed circuit board, checked with a multimeter before any power goes on.</p>
+      <div class="bigidea"><b>The big idea</b> The Pico's pin can't power a motor: it gives a few thousandths of an amp and the motor wants around an amp. So the pin only flicks a <b>switch</b>, and the switch connects the motor to its own power supply. The switch here is a MOSFET, and between the Pico and the MOSFET there's a light beam (inside the optoisolator), so the motor's electrical mess can't travel back down a wire into the Pico.</div>
+      <h4>The circuit</h4>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 700 340" role="img" aria-label="Motor driver schematic. Pico side: GP4 through a 330 ohm resistor into the LED of a 4N35 optoisolator, LED cathode to Pico ground. Motor side: 12 volts through the killswitch to the phototransistor's collector; its emitter drives the gate of an IRLB8721 MOSFET, with 10 kilo-ohm to ground; its base has 1 mega-ohm to ground. The motor, a 1N4001 diode and a 0.1 microfarad capacitor sit in parallel between 5 volts and the MOSFET's drain; the source goes to power-supply ground.">
+            <rect class="side-a" x="0" y="0" width="210" height="340"/>
+            <rect class="side-b" x="210" y="0" width="490" height="340"/>
+            <text class="blkh" x="12" y="22">Pico side · 3.3 V</text>
+            <text class="blkh" x="222" y="22">Motor side · 12 V and 5 V</text>
+            <!-- Pico side -->
+            <text class="blk" x="12" y="114">GP4 (PWM)</text>
+            <path class="sym" d="M82 110 H96"/>
+            <path class="sym" d="M96 110 l4 -7 l8 14 l8 -14 l8 14 l8 -14 l8 14 l4 -7"/>
+            <text class="tiny" x="104" y="96">330 Ω</text>
+            <path class="sym" d="M144 110 H185 V128"/>
+            <path class="symf" d="M175 128 H195 L185 146 Z"/>
+            <path class="sym" d="M174 147 H196"/>
+            <path class="sym" d="M185 147 V250"/>
+            <path class="sym" d="M173 250 H197 M177 256 H193 M181 262 H189"/>
+            <text class="tiny" x="150" y="282">Pico GND</text>
+            <!-- light -->
+            <path class="light" d="M200 132 L228 132 M200 144 L228 144"/>
+            <path class="lightf" d="M228 128 L236 132 L228 136 Z M228 140 L236 144 L228 148 Z"/>
+            <rect class="opto" x="160" y="104" width="120" height="70"/>
+            <text class="tiny" x="214" y="190">4N35</text>
+            <!-- phototransistor -->
+            <path class="sym" d="M246 120 V156" stroke-width="2.6"/>
+            <path class="sym" d="M246 128 L270 112 V44"/>
+            <path class="sym" d="M246 148 L270 164 V222"/>
+            <path class="symf" d="M270 164 L260 164 L265 156 Z"/>
+            <path class="sym" d="M246 156 V230"/>
+            <path class="sym" d="M246 230 l-7 4 l14 8 l-14 8 l14 8 l-14 8 l7 4 V300"/>
+            <text class="tiny" x="214" y="262">1 MΩ</text>
+            <!-- 12V rail with killswitch -->
+            <path class="sym" d="M270 44 H360"/>
+            <circle class="symf" cx="362" cy="44" r="3"/><circle class="symf" cx="402" cy="44" r="3"/>
+            <path class="sym" d="M362 44 L398 30"/>
+            <text class="tiny" x="356" y="66">killswitch</text>
+            <path class="sym" d="M402 44 H640"/>
+            <text class="blk" x="644" y="48">+12 V</text>
+            <!-- emitter node to gate, 10k to ground -->
+            <circle class="symf" cx="270" cy="222" r="3"/>
+            <path class="sym" d="M270 222 H420"/>
+            <path class="sym" d="M320 222 V236 l-7 4 l14 8 l-14 8 l14 8 l-14 8 l7 4 V300"/>
+            <text class="tiny" x="330" y="266">10 kΩ</text>
+            <!-- MOSFET -->
+            <path class="sym" d="M420 206 V238" stroke-width="2.6"/>
+            <path class="sym" d="M430 200 V244" stroke-width="2.6"/>
+            <path class="sym" d="M430 206 H450 V150 M430 238 H450 V300"/>
+            <path class="symf" d="M430 238 L440 234 L440 242 Z"/>
+            <text class="tiny" x="456" y="226">IRLB8721</text>
+            <text class="tiny" x="456" y="240">G · D · S</text>
+            <!-- motor bundle between 5V and drain -->
+            <path class="sym" d="M450 150 H600"/>
+            <path class="sym" d="M480 150 V136 M480 104 V90 M540 150 V128 M540 112 V90 M600 150 V140 M600 100 V90 M480 90 H640"/>
+            <path class="symf" d="M470 136 H490 L480 120 Z"/>
+            <path class="sym" d="M470 119 H490"/>
+            <path class="sym" d="M480 120 V104"/>
+            <text class="tiny" x="456" y="84">1N4001</text>
+            <path class="sym" d="M528 128 H552 M528 112 H552"/>
+            <text class="tiny" x="524" y="84">0.1 µF</text>
+            <circle class="sym" cx="600" cy="120" r="20"/>
+            <text class="blk" x="600" y="124" text-anchor="middle">M</text>
+            <text class="blk" x="644" y="94">+5 V</text>
+            <!-- ground rail -->
+            <path class="sym" d="M246 300 H640"/>
+            <text class="blk" x="560" y="320">power-supply GND</text>
+            <text class="tiny" x="222" y="332">the two grounds are NOT connected</text>
+          </svg>
+        </div>
+        <figcaption>Redrawn from the handout's motor circuit page. Blue: the Pico's world. Yellow: the motor's world. Only light crosses between them, inside the 4N35.</figcaption>
+      </figure>
+      <div class="tbl"><table>
+        <thead><tr><th>Part</th><th>Job</th><th>In plain words</th></tr></thead>
+        <tbody>
+          <tr><td>330 Ω</td><td>limits current into the 4N35's LED</td><td>so the Pico pin lights the LED without overloading</td></tr>
+          <tr><td>4N35 optoisolator</td><td>LED + light-sensitive transistor in one package</td><td>the Pico's signal crosses as light; no wire connects the two sides</td></tr>
+          <tr><td>1 MΩ (base to ground)</td><td>drains charge from the phototransistor's base</td><td>helps it switch off faster; the handout suggests about 1 MΩ "for best fall time"</td></tr>
+          <tr><td>10 kΩ (gate to ground)</td><td>pulls the MOSFET gate down when the phototransistor is off</td><td>makes "off" a firm off, not a floating maybe</td></tr>
+          <tr><td>IRLB8721 MOSFET</td><td>the power switch</td><td>gate at 12 V: the motor's current flows from drain to source</td></tr>
+          <tr><td>1N4001 diode (across the motor)</td><td>catches the voltage spike when the motor is switched off</td><td>a safe path for the motor's "kick back"</td></tr>
+          <tr><td>0.1 µF ceramic capacitor</td><td>soaks up fast noise from the motor's brushes</td><td>a shock absorber for electrical rattle. Ceramic, not electrolytic (too slow)</td></tr>
+          <tr><td>Killswitch</td><td>breaks the 12 V to the phototransistor</td><td>no gate drive, so the motor can't run whatever the Pico does</td></tr>
+          <tr><td>Screw terminals, barrel jack</td><td>connections: PWM + MCU GND, 12 V + power GND, motor + and −</td><td>check with the TA which supply goes into the barrel jack</td></tr>
+        </tbody>
+      </table></div>
+      <h4>Solder</h4>
+      <ol class="steps">
+        <li>Low parts first, so the board sits flat while you solder: the resistors (match each value to its label on the board: 330, 1M, 10k, 10k), then the diode.</li>
+        <li><b>Diode:</b> the stripe on the diode goes on the stripe of the outline printed on the board. Backwards, it short-circuits the motor supply the first time the motor is switched on.</li>
+        <li><b>4N35:</b> the small dimple marks pin 1. Match it to the notch or dot printed on the board.</li>
+        <li>Capacitor (either way round), then the MOSFET with its pins in the order G, D, S as printed on the board.</li>
+        <li>Screw terminals, barrel jack, killswitch last.</li>
+      </ol>
+      <h4>Check before power</h4>
+      <p>Multimeter on continuity (the beep setting):</p>
+      <ul class="tick">
+        <li><b>No beep</b> between the 12 V terminal and the power-supply GND terminal.</li>
+        <li><b>No beep</b> between the PWM terminal and the MCU GND terminal (a short here would short the Pico's pin).</li>
+        <li><b>No beep</b> between MCU GND and power-supply GND: the two sides really are separate.</li>
+        <li>No solder bridges between neighbouring pins on the 4N35 (look with a magnifier).</li>
+      </ul>
+      <h4>Why the spikes are so big</h4>
+      <div class="simple"><b>In simple words</b> A motor is a coil of wire, and a coil hates sudden changes in current, like a heavy cart that doesn't want to stop. Switch the current off in a hurry and the coil makes a huge voltage to keep it flowing. The diode gives that current a safe loop to fade away in.</div>
+      <p>The handout's example: a coil's voltage is <code>V = L × dI/dt</code>. A motor with L = 1 mH carrying 1 A, switched off in 10 ns, gives 10⁻³ × 1 / 10⁻⁸ = 100 000 V in principle. In practice something breaks down long before that, which is exactly what the diode is there to prevent.</p>
+      <p><b>The handout's puzzle:</b> the board has one more 10 kΩ resistor than the schematic. What is it for? Trace its two pads on the board to see what it connects, and work it out; the TA may ask.</p>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step" id="w1-s4">
+      <div class="step-h"><span class="step-n">Step 4</span><h3>Build the arm</h3></div>
+      <p>Goal: the arm swings freely on its hinge, the motor is held firmly at its end, and the wires won't fight the motion.</p>
+      <div class="bigidea"><b>The big idea</b> The controller can only fix what it measures. Anything mechanical that changes from minute to minute (a hinge that sticks, a wire that pulls, a loose motor that wobbles) looks to the controller like a mysterious force, and makes tuning much harder. A minute spent making it solid now saves an hour of tuning in week 3.</div>
+      <p>Follow the kit's parts and the TA's instructions for your bench. Then check:</p>
+      <ul class="tick">
+        <li>Lifted to level and let go, the arm swings down and settles hanging straight down, without catching anywhere.</li>
+        <li>The motor doesn't move when you wiggle it, and the propeller is pressed fully on.</li>
+        <li>The propeller clears the stand, the table and the wires all the way from hanging to well above level.</li>
+        <li>The motor's two wires run along the arm and leave near the hinge, with a loose loop there so they don't pull the arm.</li>
+        <li>There's a spot on the arm for the IMU (week 2), ideally near the hinge where vibration is lower. Leave room for its four wires.</li>
+      </ul>
+      <p>Take a photo for the lab notebook and the report: the handout asks how you selected gains and what angles are stable, and the mechanics explain a lot of that.</p>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step" id="w1-s5">
+      <div class="step-h"><span class="step-n">Step 5</span><h3>Spin the motor, open loop</h3></div>
+      <p>Goal: the checkoff. You type a power level and the motor runs at it. Then you find the numbers you'll need for tuning next week.</p>
+      <div class="bigidea"><b>The big idea</b> <b>Open loop</b> means you set the power and nothing checks the result, like a toaster on a timer: it doesn't know if the toast is done. Next week you close the loop: the Pico measures the arm and corrects itself, like a cook who looks at the toast.</div>
+      <h4>Connect</h4>
+      <div class="tbl"><table>
+        <thead><tr><th>Motor board terminal</th><th>Goes to</th></tr></thead>
+        <tbody>
+          <tr><td>PWM</td><td>Pico <code>GP4 · 6</code></td></tr>
+          <tr><td>MCU GND</td><td>Pico <code>GND · 8</code></td></tr>
+          <tr><td>MOTOR+ / MOTOR−</td><td>the motor's two wires</td></tr>
+          <tr><td>12 V / POWER SUPPLY GROUND</td><td>bench supply, 12 V output (gate drive)</td></tr>
+          <tr><td>Motor supply (barrel jack)</td><td>5–6 V, as the TA sets up (the handout runs the motor at 5–6 V)</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note warn"><b>Before you power it.</b> Killswitch <b>off</b>. Step 2 code flashed (so the PWM starts at 0). Nothing loose near the propeller; hair tied back; eyes away from the propeller's plane. The power supplies' grounds never connect to the Pico.</div>
+      <h4>Power-up order</h4>
+      <ol class="steps">
+        <li>Pico on (USB), <code>screen</code> connected. Type <code>0</code>.</li>
+        <li>Bench supply on.</li>
+        <li>Killswitch on.</li>
+        <li>Type small numbers first: 300, 600, 900… Stop at the first sign of trouble with <code>0</code> or the killswitch.</li>
+      </ol>
+      <div class="see"><b>You should see</b> the propeller start turning above some level, spin faster as you type bigger numbers, and at some point lift the arm. If air blows <b>up</b> instead of down (the arm gets pushed down), swap the two motor wires.</div>
+      <h4>Write these down</h4>
+      <p>You'll use them to pick your first gains in week 2. Read them off the terminal and your eyes, and put them in the lab notebook.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Measurement</th><th>Duty (0–6000)</th></tr></thead>
+        <tbody>
+          <tr><td>Propeller just starts turning</td><td class="fill">___</td></tr>
+          <tr><td>Arm just starts to lift off hanging</td><td class="fill">___</td></tr>
+          <tr><td>Arm holds about level (the <b>hover duty</b>)</td><td class="fill">___</td></tr>
+          <tr><td>Arm holds about 30° above level</td><td class="fill">___</td></tr>
+        </tbody>
+      </table></div>
+      <h4>Look at it on the scope (optional, good for the report)</h4>
+      <p>Channel 1 on the PWM terminal (ground clip on <b>MCU GND</b>). Channel 2 on the MOSFET's drain, i.e. MOTOR− (ground clip on <b>power-supply GND</b>; never clip a probe ground onto the other side). The drain drops low while the PWM is high, and you may see a sharp spike as it switches off: the motor's kick back, clamped by the diode.</p>
+    </div>
+
+    <!-- CHECKOFF -->
+    <div class="step" id="w1-check">
+      <div class="step-h"><span class="step-n">Done</span><h3>Checkoff</h3></div>
+      <p>Show the TA:</p>
+      <ul class="tick">
+        <li>The arm assembled, swinging freely on its hinge.</li>
+        <li>The motor board soldered on its PCB, connected to the Pico only through PWM and MCU GND.</li>
+        <li>Typing a duty cycle into the serial terminal changes the motor's speed. 0 stops it.</li>
+        <li>The killswitch stops the motor whatever the Pico is doing.</li>
+      </ul>
+      <h4>Be ready to explain</h4>
+      <div class="tbl"><table>
+        <thead><tr><th>Question</th><th>Short answer</th></tr></thead>
+        <tbody>
+          <tr><td>What is PWM?</td><td>Switching fully on and off fast; the average (duty cycle) sets the power.</td></tr>
+          <tr><td>Why 1 kHz?</td><td>The 4N35 is too slow to switch cleanly much faster.</td></tr>
+          <tr><td>Why the optoisolator?</td><td>The signal crosses as light, so motor noise and spikes have no wire back to the Pico.</td></tr>
+          <tr><td>Why separate grounds?</td><td>A shared ground would be a wire for motor noise into the Pico, undoing the optoisolator.</td></tr>
+          <tr><td>What does the diode do?</td><td>Gives the motor's current a path when switched off, so the coil can't make a huge voltage spike.</td></tr>
+          <tr><td>And the capacitor?</td><td>Absorbs fast noise from the brushes. Ceramic, because electrolytics are too slow.</td></tr>
+          <tr><td>Why not a breadboard?</td><td>Its contacts can't carry the motor's current; the handout says it would melt.</td></tr>
+          <tr><td>How is 1 kHz made from 150 MHz?</td><td>Divide by 25 to 6 MHz, count to 6000: 6 MHz / 6000 = 1 kHz.</td></tr>
+        </tbody>
+      </table></div>
+      <h4>Log the AI use</h4>
+      <p>The report needs a prompt log for AI-generated code: words exchanged, and how many additions, deletions and modifications were suggested and accepted. Step 2's tally line gives the suggested numbers; note whether you used it as given. Record it in the lab notebook with the measurements from step 5.</p>
+    </div>
+
+    <!-- WORD LIST -->
+    <div class="step" id="w1-words">
+      <div class="step-h"><span class="step-n">Ref</span><h3>Word list</h3></div>
+      <dl class="gloss">
+        <dt>PWM</dt><dd>Pulse-width modulation: a pin switched on and off at a fixed rate, where the on-fraction (duty cycle) sets the average.</dd>
+        <dt>Duty cycle</dt><dd>The fraction of each period the pin is high. Here, your number out of 6000.</dd>
+        <dt>Slice, channel</dt><dd>The RP2350's PWM is split into slices with one counter each; each slice has two outputs, A and B. GP4 is slice 2, channel A.</dd>
+        <dt>Wrap</dt><dd>When the PWM counter reaches its top value and starts again. It can trigger an interrupt.</dd>
+        <dt>UART</dt><dd>The two-wire serial link (TX and RX) to the laptop, through the USB-to-serial adapter.</dd>
+        <dt>Baud rate</dt><dd>Serial speed in bits per second. Both ends must agree: 115200.</dd>
+        <dt>Optoisolator</dt><dd>An LED and a light sensor in one chip: passes a signal with no electrical connection.</dd>
+        <dt>MOSFET</dt><dd>A transistor used as a power switch. Voltage on the gate lets current flow from drain to source.</dd>
+        <dt>Flyback (snubber) diode</dt><dd>A diode across a coil that carries its current when switched off, preventing a voltage spike.</dd>
+        <dt>Open loop</dt><dd>Setting an output without measuring the result.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============================ WEEK 2 ============================ -->
+  <section class="panel" id="week2" role="tabpanel" aria-labelledby="tab-week2" hidden>
+    <h2>Week 2 · Measure the angle, close the loop</h2>
+    <p class="lede">Checkoff: end of your lab section, week of 10/26. The handout asks for three things, on top of week 1: the arm's angle and the smoothed motor command plotted on the VGA screen, closed-loop control of the motor (proportional alone is fine), and serial commands that set the PID gains.</p>
+
+    <div class="note"><b>Where the code comes from.</b> This week starts from a different course demo, <code>Sensors/MPU6050_IMU_Demo</code>, which the handout links for week 2. It already has the VGA screen, the I²C link to the IMU, and a 1 kHz PWM interrupt on GP4/GP5: almost the whole skeleton. Your file is <code>imu_demo.c</code>, in a new folder (in the group repo: <code>PID_Helicopter/week2_IMU_Demo/imu_demo.c</code>). The changes in steps 2–4 were written with Claude and compiled for the Pico 2; they haven't run on your board yet.</div>
+
+    <div class="legend">
+      <span><span class="op add">Add</span> type in the green lines</span>
+      <span><span class="op chg">Change</span> replace the red lines with the green ones</span>
+      <span><span class="l ctx inline">grey line</span> already in the file, just a landmark</span>
+    </div>
+    <div class="note"><b>Finding the spot.</b> Each edit's <b>Where</b> line ends with a line number, like <span class="lineno">right below line 55</span>. In VS Code the numbers run down the left edge; Ctrl+G (on a Mac too) jumps to a line. The numbers count from the unchanged demo and assume you've done the earlier edits in order: each edit adds lines and pushes later code down. If a number doesn't match, search (Cmd+F) for the grey or red line in the card instead.</div>
+
+    <nav class="stepnav" aria-label="Week 2 steps">
+      <a href="#w2-s1">1 · IMU demo</a>
+      <a href="#w2-s2">2 · The angle</a>
+      <a href="#w2-s3">3 · Plot it</a>
+      <a href="#w2-s4">4 · Close the loop</a>
+      <a href="#w2-s5">5 · First tuning</a>
+      <a href="#w2-check">Checkoff</a>
+      <a href="#w2-words">Word list</a>
+    </nav>
+
+    <!-- STEP 1 -->
+    <div class="step" id="w2-s1">
+      <div class="step-h"><span class="step-n">Step 1</span><h3>Wire the IMU and run its demo</h3></div>
+      <p>Goal: the IMU talking to the Pico, its six readings on the screen, and a note of which of its axes points which way on your arm.</p>
+      <div class="bigidea"><b>The big idea</b> The IMU is two sensors in one chip. The <b>accelerometer</b> feels which way gravity pulls, like a plumb line. The <b>gyroscope</b> feels how fast it's turning, like the feeling of spinning on an office chair. Each measures along three directions, x, y and z, fixed to the chip. Before using them you need to know which of those directions lines up with your arm.</div>
+      <h4>Make the week 2 folder</h4>
+      <pre><code>cp -R Hunter-Adams-RP2040-Demos/Sensors/MPU6050_IMU_Demo Lab3_Helicopter</code></pre>
+      <h4>Wire</h4>
+      <div class="tbl"><table>
+        <thead><tr><th>IMU pin</th><th>Pico</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>VCC</td><td><code>3V3 · 36</code></td><td>3.3 V, not 5 V</td></tr>
+          <tr><td>GND</td><td><code>GND · 13</code></td><td></td></tr>
+          <tr><td>SCL</td><td><code>GP9 · 12</code></td><td>I²C clock</td></tr>
+          <tr><td>SDA</td><td><code>GP8 · 11</code></td><td>I²C data</td></tr>
+          <tr><td>others (XDA, XCL, AD0, INT)</td><td>leave unconnected</td><td>AD0 open gives address 0x68, which the demo uses</td></tr>
+        </tbody>
+      </table></div>
+      <p>Fix the IMU flat on the arm (step 4 of week 1 left a spot). Run its four wires along the arm with a loose loop at the hinge, like the motor wires. Plug the VGA adapter board in as in Lab 2. The motor board can stay connected: this demo starts GP4 at 0, so the motor stays off.</p>
+      <div class="simple"><b>In simple words</b> <b>I²C</b> is a two-wire bus: one wire is a clock ("now… now… now…") and the other carries the bits. Every chip on the bus has an address, like a house number; the Pico calls 0x68 and the IMU answers with its 12 bytes of readings.</div>
+      <h4>Change the code</h4>
+      <p class="tally">Nothing this step.</p>
+      <h4>Build and flash</h4>
+      <p><code>./flash.sh Lab3_Helicopter</code>, then BOOTSEL.</p>
+      <div class="see"><b>You should see</b> two plots scrolling. Top: gyro x, y, z (white, red, green), near 0 when the arm is still. Bottom: accelerometer x, y, z, one of them at about +1 g when the IMU lies flat.</div>
+      <figure class="screenfig">
+        <div class="screenwrap">{{FIG screen_demo}}</div>
+        <figcaption>Sketch of the unmodified IMU demo with the arm level and still. Which colour sits at +1 g depends on your mounting. <span class="yl">Yellow notes</span> explain; they are not on the real screen.</figcaption>
+      </figure>
+      <h4>Find your axes</h4>
+      <p>The colours are x = <b>white</b> (0), y = <b>red</b> (1), z = <b>green</b> (2). On the bottom plot, 1 g is about halfway between 0 and the +2 label. Do these three tests and fill in the table; step 2 needs it.</p>
+      <ol class="steps">
+        <li><b>Hold the arm level and still.</b> The accelerometer trace near +1 g is the <b>up</b> axis: <code>UP_SIGN</code> is +1. If one sits at −1 g instead, that's the up axis upside down: <code>UP_SIGN</code> is −1.</li>
+        <li><b>Let the arm hang straight down.</b> A different trace moves to ±1 g: that's the <b>along-the-arm</b> axis. At −1 g it points out toward the motor: <code>ARM_SIGN</code> +1. At +1 g it points back to the hinge: <code>ARM_SIGN</code> −1.</li>
+        <li><b>Lift the arm quickly by hand.</b> One gyro trace jumps (the axis along the hinge). Jumps up: <code>GYRO_SIGN</code> +1. Down: −1.</li>
+      </ol>
+      <div class="tbl"><table>
+        <thead><tr><th>Setting</th><th>Axis (0 = x, 1 = y, 2 = z)</th><th>Sign</th></tr></thead>
+        <tbody>
+          <tr><td>Up (level test)</td><td class="fill"><code>UP_AXIS</code> = ___</td><td class="fill"><code>UP_SIGN</code> = ___</td></tr>
+          <tr><td>Along the arm (hanging test)</td><td class="fill"><code>ARM_AXIS</code> = ___</td><td class="fill"><code>ARM_SIGN</code> = ___</td></tr>
+          <tr><td>Hinge (lift test)</td><td class="fill"><code>GYRO_AXIS</code> = ___</td><td class="fill"><code>GYRO_SIGN</code> = ___</td></tr>
+        </tbody>
+      </table></div>
+      <h4>Check the interrupt rate</h4>
+      <p>The demo's interrupt flips <code>GP14 · 19</code> every time it runs. Probe it: a square wave at <b>500 Hz</b> (it flips once per 1 ms interrupt, so a full up-down takes 2 ms) means the interrupt really runs at 1 kHz. That interrupt is where the angle and the controller will live.</p>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step" id="w2-s2">
+      <div class="step-h"><span class="step-n">Step 2</span><h3>Turn the readings into one angle</h3></div>
+      <p>Goal: a single, steady number for the arm's angle, in degrees, on the screen. −90 hanging, 0 level.</p>
+      <div class="bigidea"><b>The big idea</b> You have two ways to know the angle, and each is bad in a different way. The <b>gyro</b> is like walking with your eyes closed and counting steps: very accurate over a few seconds, but small errors add up and you slowly drift off course. The <b>accelerometer</b> is like glancing at a plumb line on a bumpy bus: always right on average, but jumpy, and the motor's shaking makes it worse. The <b>complementary filter</b> walks by counting steps (gyro) and keeps glancing at the plumb line (accelerometer) to correct the drift. Each covers the other's weakness.</div>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 680 210" role="img" aria-label="Complementary filter: accelerometer through a low-pass and atan2 gives a noisy angle, weighted 0.01; gyro rate times 0.001 seconds added to the last angle gives a smooth but drifting angle, weighted 0.99; the two are added to give the angle.">
+            <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="acc" d="M0 0 L10 5 L0 10 Z"/></marker></defs>
+            <rect class="boxf" x="10" y="24" width="130" height="50"/><text class="blkh" x="20" y="45">Accelerometer</text><text class="tiny" x="20" y="62">which way is down (g)</text>
+            <rect class="boxa" x="170" y="24" width="120" height="50"/><text class="blkh" x="180" y="45">Smooth</text><text class="tiny" x="180" y="62">low-pass, 2.2</text>
+            <rect class="boxa" x="320" y="24" width="140" height="50"/><text class="blkh" x="330" y="45">atan2 → degrees</text><text class="tiny" x="330" y="62">noisy, never drifts</text>
+            <rect class="boxf" x="10" y="136" width="130" height="50"/><text class="blkh" x="20" y="157">Gyroscope</text><text class="tiny" x="20" y="174">turn rate (deg/s)</text>
+            <rect class="boxa" x="170" y="136" width="290" height="50"/><text class="blkh" x="180" y="157">last angle + rate × 0.001 s</text><text class="tiny" x="180" y="174">smooth, slowly drifts</text>
+            <text class="acc2" x="490" y="44">× 0.01</text>
+            <text class="acc2" x="490" y="176">× 0.99</text>
+            <circle class="boxa" cx="580" cy="105" r="16"/><text class="blkh" x="580" y="110" text-anchor="middle">+</text>
+            <path class="line" stroke-width="1.6" d="M140 49 H166" marker-end="url(#ar2)"/>
+            <path class="line" stroke-width="1.6" d="M290 49 H316" marker-end="url(#ar2)"/>
+            <path class="line" stroke-width="1.6" d="M140 161 H166" marker-end="url(#ar2)"/>
+            <path class="line" stroke-width="1.6" d="M460 49 H545 L568 92" marker-end="url(#ar2)"/>
+            <path class="line" stroke-width="1.6" d="M460 161 H545 L568 118" marker-end="url(#ar2)"/>
+            <path class="line" stroke-width="1.6" d="M596 105 H640" marker-end="url(#ar2)"/>
+            <text class="blkh" x="600" y="96">angle</text>
+          </svg>
+        </div>
+        <figcaption>One pass of the filter, run every millisecond. The new angle becomes next time's "last angle".</figcaption>
+      </figure>
+      <h4>Change the code</h4>
+      <p>First, put your three axes and signs from step 1 into edit 2.1's <code>#define</code>s (the listing shows 0, 1, 2 and all +1 as placeholders).</p>
+      <p class="tally">{{TALLY 2 2}}</p>
+{{CARDS 2 2}}
+      <h4>Build and flash</h4>
+      <div class="see"><b>You should see</b> <code>angle</code> in the top-left corner. Hanging still: close to −90. Held level (check with a protractor or a phone's level app): close to 0. Above level: positive. Tap the arm: the number barely flickers.</div>
+      <h4>If it's wrong</h4>
+      <div class="tbl"><table>
+        <thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Hanging reads +90</td><td>along-arm axis backwards</td><td>flip <code>ARM_SIGN</code></td></tr>
+          <tr><td>Hanging reads −90 but level reads ±180</td><td>up axis backwards</td><td>flip <code>UP_SIGN</code></td></tr>
+          <tr><td>Number swings the wrong way for a moment when you lift, then creeps back</td><td>gyro backwards: the two halves of the filter disagree</td><td>flip <code>GYRO_SIGN</code></td></tr>
+          <tr><td>Number creeps slowly even when still</td><td>gyro bias (a small constant error in the gyro)</td><td>normal in small amounts; the 1 % accelerometer share pulls it back. More <code>ACCEL_WEIGHT</code> corrects faster but is noisier</td></tr>
+          <tr><td>Stuck at one value, or nonsense</td><td>I²C not answering</td><td>step 1's demo still working? Check SDA/SCL aren't swapped and VCC is 3.3 V</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Tuning knobs.</b> <code>ACCEL_WEIGHT</code> (0.01) is how fast gravity corrects the gyro: bigger trusts the accelerometer more (less drift, more noise). <code>ACCEL_SMOOTH</code> (0.05) is how heavily the accelerometer is smoothed before <code>atan2</code>: the handout notes that noise going through <code>atan2</code> needs this, since the arm isn't near a small angle.</p>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step" id="w2-s3">
+      <div class="step-h"><span class="step-n">Step 3</span><h3>Plot the angle and the motor command</h3></div>
+      <p>Goal: the screen the handout asks for: the angle on top, the smoothed motor command below, scrolling live. And an <code>m</code> command to set the motor by hand, to test it.</p>
+      <div class="bigidea"><b>The big idea</b> A number tells you where the arm is now; a graph tells you what it's been doing. Overshoot, wobble, sag and slow drift only show up as shapes over time, and those shapes are how you'll tune the controller. The motor command jumps around a lot, so for the screen it's smoothed, like averaging the last few readings of a jittery bathroom scale.</div>
+      <h4>Change the code</h4>
+      <p class="tally">{{TALLY 2 3}}</p>
+{{CARDS 2 3}}
+      <h4>Build, flash, try it</h4>
+      <p>Arm hanging, killswitch on. In <code>screen</code>, press Enter if needed, then:</p>
+      <pre class="term"><code>input a command: <span class="you">m</span>
+motor (0-6000): <span class="you">(your hover duty from week 1)</span>
+input a command: <span class="you">m</span>
+motor (0-6000): <span class="you">0</span></code></pre>
+      <div class="see"><b>You should see</b> the green motor trace step up to your number and the white angle trace rise from −90 toward level, probably overshooting and wobbling before it settles. Then back down when you type 0.</div>
+      <figure class="screenfig">
+        <div class="screenwrap">{{FIG screen_open}}</div>
+        <figcaption>Sketch of step 3 with the motor set by hand. The real shape depends on your arm. <span class="yl">Yellow notes</span> explain; they are not on the real screen.</figcaption>
+      </figure>
+      <p>Type <code>t</code> then 30 to slow the scroll to about 16 s per screen. Notice: at the same power, the arm may settle at a slightly different angle each time. That's why open loop isn't enough.</p>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step" id="w2-s4">
+      <div class="step-h"><span class="step-n">Step 4</span><h3>Close the loop</h3></div>
+      <p>Goal: you type an angle and the Pico holds the arm there by itself, with gains you set over serial.</p>
+      <div class="bigidea"><b>The big idea</b> Think of cruise control on a car going up and down hills. <b>P</b> (proportional): the slower you are than the target, the harder you press the pedal. <b>I</b> (integral): if you've been a bit slow for a while, press a little harder still, until the slowness is gone. <b>D</b> (derivative): if you're already speeding up fast, ease off before you overshoot. Each gain (<code>Kp</code>, <code>Ki</code>, <code>Kd</code>) says how strongly to apply that rule.</div>
+      <h4>Change the code</h4>
+      <p class="tally">{{TALLY 2 4}}</p>
+{{CARDS 2 4}}
+      <h4>The commands</h4>
+      <div class="tbl cmds"><table>
+        <thead><tr><th>Type</th><th>Then</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td>a</td><td>angle in degrees</td><td>sets the target and turns the controller on</td></tr>
+          <tr><td>p</td><td>a number</td><td>sets <code>Kp</code>, straight away</td></tr>
+          <tr><td>i</td><td>a number</td><td>sets <code>Ki</code></td></tr>
+          <tr><td>d</td><td>a number</td><td>sets <code>Kd</code></td></tr>
+          <tr><td>m</td><td>0–6000</td><td>controller off, motor at that power</td></tr>
+          <tr><td>s</td><td>(nothing)</td><td>stop: controller off, motor off</td></tr>
+          <tr><td>t</td><td>a whole number</td><td>plot one point every that many ms (10 by default)</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step" id="w2-s5">
+      <div class="step-h"><span class="step-n">Step 5</span><h3>First tuning: P alone</h3></div>
+      <p>Goal: the week 2 checkoff, closed-loop control with only P. Your first look at what each gain does.</p>
+      <div class="bigidea"><b>The big idea</b> With P alone the arm will settle <b>below</b> the target, and that's expected. P only pushes when there's an error. Holding the arm up takes about the hover duty, so the arm has to sag until <code>Kp × error</code> equals the hover duty. A bigger <code>Kp</code> needs less sag to push the same, but past some point the arm starts to bounce. I removes the sag (week 3).</div>
+      <h4>A first guess for Kp</h4>
+      <p>Use your hover duty from week 1. If you'd accept the arm sagging 45° below a level target to start with:</p>
+      <p><code>Kp ≈ hover duty ÷ 45</code>, e.g. a hover duty of 1800 would give Kp = 40. Your hover duty: <span class="fill">___</span>, so your starting Kp: <span class="fill">___</span>.</p>
+      <h4>Try it</h4>
+      <ol class="steps">
+        <li>Arm hanging, killswitch on. <code>p</code> → your starting Kp. <code>a</code> → <code>0</code>.</li>
+        <li>Watch the screen: the yellow target line at 0, the white angle rising and settling below it.</li>
+        <li>Double <code>Kp</code> and watch the sag shrink. Keep doubling until the arm starts to bounce; then halve it once.</li>
+        <li>Try <code>a</code> → −30 and <code>a</code> → 20. The sag is different at each angle: gravity's pull on the arm changes with the angle.</li>
+        <li>Optional preview of week 3: a small <code>d</code> calms the bounce; a small <code>i</code> pulls the arm up to the target over a few seconds.</li>
+        <li><code>s</code> when done.</li>
+      </ol>
+      <figure class="screenfig">
+        <div class="screenwrap">{{FIG screen_pid}}</div>
+        <figcaption>Sketch of P alone with the target at 0: the arm rises, overshoots a little, and settles below the yellow line. <span class="yl">Yellow notes</span> explain; they are not on the real screen.</figcaption>
+      </figure>
+      <h4>What each gain looks like</h4>
+      <p>These are sketches of the shapes to recognise on the screen, not measurements. The dashed line is the target.</p>
+      <div class="panels">
+        <figure><div class="fig"><svg viewBox="0 0 160 110" role="img" aria-label="P alone: rises and settles below the target."><path class="tgt" d="M5 30 H155"/><path class="curve" d="M5 100 H20 C40 100 45 40 65 42 C85 44 90 56 110 54 S140 52 155 52"/></svg></div><figcaption><b>P alone</b>: settles below the target (sag)</figcaption></figure>
+        <figure><div class="fig"><svg viewBox="0 0 160 110" role="img" aria-label="P too large: keeps bouncing around."><path class="tgt" d="M5 30 H155"/><path class="curve" d="M5 100 H20 C30 100 32 15 45 15 C58 15 60 70 72 70 C84 70 86 20 98 20 C110 20 112 62 124 62 C136 62 138 26 150 26"/></svg></div><figcaption><b>P too big</b>: keeps bouncing</figcaption></figure>
+        <figure><div class="fig"><svg viewBox="0 0 160 110" role="img" aria-label="P plus D: rises smoothly, no bounce, still below the target."><path class="tgt" d="M5 30 H155"/><path class="curve" d="M5 100 H20 C45 100 55 48 80 46 S130 44 155 44"/></svg></div><figcaption><b>P + D</b>: calm, but still sags</figcaption></figure>
+        <figure><div class="fig"><svg viewBox="0 0 160 110" role="img" aria-label="P plus I plus D: rises, overshoots slightly, settles on the target."><path class="tgt" d="M5 30 H155"/><path class="curve" d="M5 100 H20 C40 100 48 40 68 38 C90 36 100 26 115 28 S140 30 155 30"/></svg></div><figcaption><b>P + I + D</b>: reaches the target</figcaption></figure>
+      </div>
+      <p>Write down what you tried and what you saw (gains, angles, how long it took to settle). The report asks how you chose the gains, which angles are stable and the settling times.</p>
+    </div>
+
+    <!-- CHECKOFF -->
+    <div class="step" id="w2-check">
+      <div class="step-h"><span class="step-n">Done</span><h3>Checkoff</h3></div>
+      <p>Everything from week 1, plus show the TA:</p>
+      <ul class="tick">
+        <li>The VGA screen shows the arm angle (white) and the low-passed motor command (green), scrolling live.</li>
+        <li>Typing <code>a</code> and an angle makes the arm go there under closed-loop control. P alone is fine; some sag is expected.</li>
+        <li><code>p</code>, <code>i</code> and <code>d</code> change the gains over serial while it runs, taking effect immediately.</li>
+      </ul>
+      <h4>Be ready to explain</h4>
+      <div class="tbl"><table>
+        <thead><tr><th>Question</th><th>Short answer</th></tr></thead>
+        <tbody>
+          <tr><td>Why not use only the accelerometer?</td><td>Noisy, especially with the motor shaking it.</td></tr>
+          <tr><td>Why not use only the gyro?</td><td>Adding up its readings drifts (bias), with nothing to correct it.</td></tr>
+          <tr><td>What does the complementary filter do?</td><td>Mostly gyro (short-term), a little accelerometer (long-term): a high-pass on one, a low-pass on the other.</td></tr>
+          <tr><td>Why <code>atan2</code> and not <code>ax/ay</code>?</td><td>The arm goes far from level, so the small-angle shortcut fails; <code>atan2</code> works at any angle.</td></tr>
+          <tr><td>Why is the controller in the PWM interrupt?</td><td>It runs exactly every 1 ms, so the timing (DT) is fixed. Threads can be late by milliseconds.</td></tr>
+          <tr><td>Why low-pass the displayed command?</td><td>The raw command is too jumpy to see its shape; the handout requires the shape be visible.</td></tr>
+          <tr><td>Why does P alone sag?</td><td>It only pushes when there's error, and holding the arm up needs a push.</td></tr>
+          <tr><td>How is D done here?</td><td>From the gyro's turn rate, which is the derivative of the angle, measured directly.</td></tr>
+          <tr><td>Why clamp the output to 0–6000?</td><td>The motor can't push down or above full power; asking for it would do nothing useful.</td></tr>
+          <tr><td>What is I²C?</td><td>Two-wire bus: clock and data; the Pico addresses the IMU at 0x68.</td></tr>
+        </tbody>
+      </table></div>
+      <h4>Log the AI use</h4>
+      <p>The tally lines at the top of steps 2, 3 and 4 are the suggested additions and deletions for the prompt log. Note which edits you used as given and which you changed. Put the measurements (axes, hover duty, gains tried) in the lab notebook too.</p>
+    </div>
+
+    <!-- WORD LIST -->
+    <div class="step" id="w2-words">
+      <div class="step-h"><span class="step-n">Ref</span><h3>Word list</h3></div>
+      <dl class="gloss">
+        <dt>IMU</dt><dd>Inertial measurement unit: here the MPU6050, an accelerometer and a gyroscope in one chip.</dd>
+        <dt>Accelerometer</dt><dd>Measures acceleration along 3 axes, in g. Still, it reads gravity: 1 g pointing up.</dd>
+        <dt>Gyroscope</dt><dd>Measures turning speed around 3 axes, in degrees per second.</dd>
+        <dt>Gyro bias</dt><dd>A small constant error in the gyro's reading. Added up over time it becomes drift.</dd>
+        <dt>Complementary filter</dt><dd>A weighted blend of the gyro's angle (good short-term) and the accelerometer's (good long-term).</dd>
+        <dt>Low-pass filter</dt><dd>Keeps slow changes, smooths away fast jitter. Here: move a fraction of the way toward each new reading.</dd>
+        <dt><code>atan2(y, x)</code></dt><dd>The angle of the arrow (x, y), correct in all four quarters of the circle.</dd>
+        <dt>I²C</dt><dd>Two-wire bus (SDA data, SCL clock) where each chip has an address.</dd>
+        <dt>Closed loop</dt><dd>Measuring the result and correcting the output from it: feedback.</dd>
+        <dt>Error</dt><dd>Target minus measured angle.</dd>
+        <dt>P, I, D</dt><dd>The three terms: proportional to the error, to its running total, and to how fast it's changing.</dd>
+        <dt>Gain</dt><dd>How strongly a term acts: <code>Kp</code>, <code>Ki</code>, <code>Kd</code>.</dd>
+        <dt>Integral windup</dt><dd>The I term growing huge while the arm can't move. Clamping it to 0–6000 prevents it.</dd>
+        <dt>Settling time</dt><dd>How long after a target change the arm takes to stay within a small band of its final angle.</dd>
+        <dt>Floating point</dt><dd>Numbers with a decimal point (<code>float</code>). The RP2350 has hardware for them, so they are fast enough here.</dd>
+      </dl>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var ids = ["overview","week1","week2"];
+  var tabs = {}, panels = {};
+  ids.forEach(function(id){
+    tabs[id] = document.getElementById("tab-" + id);
+    panels[id] = document.getElementById(id);
+  });
+
+  function show(id, focus){
+    if (ids.indexOf(id) < 0) id = "overview";
+    ids.forEach(function(k){
+      var on = k === id;
+      tabs[k].setAttribute("aria-selected", on ? "true" : "false");
+      tabs[k].tabIndex = on ? 0 : -1;
+      panels[k].hidden = !on;
+    });
+    if (focus) tabs[id].focus();
+    try { localStorage.setItem("heli-tab", id); } catch (e) {}
+    if (location.hash !== "#" + id) {
+      try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    }
+  }
+
+  ids.forEach(function(id, i){
+    tabs[id].addEventListener("click", function(){ show(id); window.scrollTo({top:0}); });
+    tabs[id].addEventListener("keydown", function(ev){
+      var d = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
+      if (!d) return;
+      ev.preventDefault();
+      show(ids[(i + d + ids.length) % ids.length], true);
+    });
+  });
+
+  document.querySelectorAll("[data-go]").forEach(function(b){
+    b.addEventListener("click", function(){ show(b.getAttribute("data-go")); window.scrollTo({top:0}); });
+  });
+
+  // Links to a section in another tab: switch tabs, then scroll to it
+  document.addEventListener("click", function(ev){
+    var a = ev.target.closest ? ev.target.closest('a[href^="#"]') : null;
+    if (!a) return;
+    var el = document.getElementById(a.getAttribute("href").slice(1));
+    var tab = el && el.closest ? el.closest("[role=tabpanel]") : null;
+    if (!tab || !tab.hidden) return;
+    ev.preventDefault();
+    show(tab.id);
+    el.scrollIntoView();
+  });
+
+  var start = (location.hash || "").slice(1);
+  var target = start && ids.indexOf(start) < 0 ? document.getElementById(start) : null;
+  var holder = target && target.closest ? target.closest("[role=tabpanel]") : null;
+  if (holder) {
+    show(holder.id);
+    try { history.replaceState(null, "", "#" + start); } catch (e) {}
+    target.scrollIntoView();
+  } else {
+    if (ids.indexOf(start) < 0) {
+      try { start = localStorage.getItem("heli-tab") || "overview"; } catch (e) { start = "overview"; }
+    }
+    show(start);
+  }
+})();
+</script>
