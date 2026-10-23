@@ -192,6 +192,22 @@ Motor = average command over the last 3 s. 0 IMU errors in every run.
   over between steps plus hinge friction. This is the main thing left to fix
   (ramped target or limited I growth), then re-run this table.
 
+## Overshoot experiments (23 Oct, late)
+
+Benchmark 0 → +30 → +40, Kp 100 Kd 12 Ki 80 cap 4500, 6 s each:
+
+| Fix | +30 overshoot | Result |
+| --- | --- | --- |
+| none | 16.7 | baseline |
+| target ramp 30 deg/s | 20.7 | worse; 0 deg still −4.8 after 6 s |
+| I band 10 deg | n/a | broken: I never engages, arm 25–35 deg low |
+
+Cause: I holds the power for the previous angle; above level less is needed,
+so an upward step gets ~900 too much. Next: **feedforward**
+`3850 × cos(aim)^1.8` (fits the hold-power table), written in
+`tools/pid-tuning/firmware-trial` (`f` command), **not yet run**. Details and
+the exact next commands: `notes/lab3-handover.md`.
+
 ## Next steps
 
 1. Final check with the corrected test build: hanging ≈ −90, level ≈ 0,

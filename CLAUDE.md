@@ -6,7 +6,9 @@ so anything the next session needs goes in this file or in `notes/`, not only
 in chat or memory.
 
 **Start here for Lab 2:** `notes/lab2-status.md` (where things stand, what's
-next, what hasn't been checked on the board). **Lab 3:** `notes/lab3-status.md`.
+next, what hasn't been checked on the board). **Lab 3:** start with
+`notes/lab3-handover.md` (state, bench, tools, next experiment), then
+`notes/lab3-status.md` (all measurements).
 
 ## How to work with the student
 
