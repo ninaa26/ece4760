@@ -11,10 +11,16 @@ student.
   as written.
 - The group keeps its Lab 3 code in its own repo, in
   `~/Developer/Active/RP2350-final/PID_Helicopter/` (`week1_PWM_Demo`,
-  `week2_IMU_Demo`, `week3_Helicopter`). Same unchanged demos as the guide
-  starts from, so the guide's line numbers match.
+  `week2_IMU_Demo`, `week3_Helicopter`). Pushed there on 23 Oct: week 1
+  edits 2.1–2.2 in `week1_PWM_Demo`, and week 2 edits 2.1–2.3 with this arm's
+  calibration in `week2_IMU_Demo`. `week2_hover_test` (duty over serial plus
+  angle printout, with an I2C bus-recovery fix at startup) is local only.
 - A **Raspberry Pi Debug Probe** is on the bench (`/dev/tty.usbmodem1102`).
-  No openocd is installed, so flashing is still BOOTSEL + copy.
+  No openocd is installed, so flashing is still BOOTSEL + copy. Its UART is
+  wired to GP0/GP1. `screen` quits at once in the Claude app's terminal panel;
+  use `python3 tools/pico-serial.py` (line at a time, sends CR) instead. The
+  hover test folder has a copy as `serial_terminal.py` and a VS Code task
+  "Serial Terminal".
 
 ## IMU axes on this arm (measured 23 Oct, over USB serial)
 
@@ -46,6 +52,42 @@ to ~12°. The test build subtracts them before smoothing:
     float up_now  = UP_SIGN  * (fix2float15(acceleration[UP_AXIS]) - ACCEL_Z_OFFSET) ;
 
 Gyro bias at rest: gy about −2 °/s, gz about −4 °/s.
+
+## Open-loop duty vs angle (measured 23 Oct)
+
+With `PID_Helicopter/week2_hover_test` (type a duty, prints the angle twice a
+second; on the student's Mac in the group repo folder, not pushed). Settled
+angle read off the serial printout:
+
+| Duty (of 6000) | Angle |
+| --- | --- |
+| 0 | −76 (rest; not −90, the arm doesn't hang vertical) |
+| 100 | −76 |
+| 1000 | −62 |
+| 2000 | −47 going up; −36 coming down from above |
+| 2500 | −28 |
+| 2600 | −27 |
+| 2900 | −20 |
+| 3000 | −18 (−29 on the first pass) |
+| 3100 | −15 |
+| 3200 | −13 |
+| 3300 | −11 |
+| 3400 | −8 |
+| 3500 | −4 |
+| 3550 | −2 |
+| 3600 | −0.5 ± 1.5 |
+| 3610 | 0 to +4, creeping up |
+| 4000 | shot up to +67 and stayed (3000 then held it there) |
+
+- **Hover duty for level: about 3600 (60 %).** First Kp guess
+  (guide week 2 step 5, hover ÷ 45): about 80.
+- Above level, a little more duty runs the arm away upward: gravity's pull
+  shrinks as the arm rises (cos of the angle). Open loop can't hold it there.
+- Hysteresis: the same duty settles at different angles depending on the
+  direction it came from (friction in the hinge, wires).
+- At duty 3610 the angle suddenly dropped from +4 to −79 and stayed there,
+  noise-free, with the duty still 3610: the motor stopped (killswitch, supply
+  or a wire). Cause not known yet.
 
 ## Next steps
 
