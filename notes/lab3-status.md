@@ -89,6 +89,71 @@ angle read off the serial printout:
   noise-free, with the duty still 3610: the motor stopped (killswitch, supply
   or a wire). Cause not known yet.
 
+## PID gain sweep (23 Oct, `tools/pid-tuning/pid-sweep.py`, target 0 deg, from hanging)
+
+P and D only (Ki = 0); settled angle and how long it took to settle within 3 deg:
+
+| Kp | Kd 0 | Kd 3 | Kd 6 | Kd 10 |
+| --- | --- | --- | --- | --- |
+| 20 | −61, 4.1 s | −62, 1.0 s | −64, 0.5 s | −64, 0.6 s |
+| 30 | −54, 5.7 s | −55, 1.3 s | −56, 0.7 s | −57, 0.5 s |
+| 45 | −45, 8.2 s (wobble ±1.5) | −46, 1.6 s | −47, 1.0 s | −48, 0.7 s |
+| 60 | −39, 8.1 s (wobble ±1.3) | −39, 2.0 s | −40, 1.2 s | −41, 0.7 s |
+| 80 | (failed, see below) | (failed) | −34, 2.6 s | −35, 2.2 s |
+
+- P alone sags as expected; more Kp, less sag. With Kd = 0 it takes ~8 s and
+  keeps a small wobble; any Kd of 3 or more settles in 1–2 s with no wobble.
+- **Best P-only for the week 2 checkoff: Kp 80, Kd 6 (settles at about −34
+  deg, 2.6 s).** Kp 60, Kd 3 is a gentler alternative (−39 deg).
+- **Every try after the first two Kp 80 runs failed the same way**: the
+  controller asked for full power (6000) for most of the run while the arm
+  stayed near the bottom (−77 ± 10 deg), lifting a little and dropping back with
+  the motor still at 6000. Same as the earlier "strong, short pulses" and the
+  motor stopping at duty 3610. Most likely the bench supply hitting its current
+  limit (a stalled motor at full duty draws the most current) and cutting out.
+  Ki could not be tested because of this; the range check failed for the same
+  reason at 0 and +30 deg, but held −30 (−53) and 0 (−36) once the demand dropped.
+- To check: the supply's CC / current-limit light during a full-power start.
+
+## Iterative PID trials (23 Oct evening, `tools/pid-tuning/pid-trial.py`, `tools/pid-tuning/firmware-trial`)
+
+Motor board powered from the barrel jack (not the bench supply); bench supply
+powers the Pico side. Trial firmware: IMU read-error counter (failed reads keep
+the last good values), `x` command caps the controller's motor command.
+
+Findings, in order:
+
+1. **IMU reads were clean in every trial (0 errors).** The earlier wild runs
+   were not I2C errors (but a loose IMU wire did cause the earlier
+   all-zero +17 deg readings and startup freeze).
+2. **The motor supply can't deliver above about 4500–5000 duty.** Open loop:
+   3000 holds −16 deg, 4000 and 4500 fling the arm past +40 deg, 5000 can't
+   lift it at all (arm shakes at the bottom, gyro hits ±250 deg/s). Whenever
+   the controller asks for more than ~4500 for long, power collapses and the
+   controller pins at 6000. This explains every "full power, arm won't rise"
+   failure today.
+3. **Fix: cap the controller at 4500.** Hovering needs only ~3700. Now in the
+   group repo's `week2_IMU_Demo` as `MOTOR_CAP` (merged to main 23 Oct); the
+   `m` command is not capped.
+4. Best gains found (cap 4500): **Kp 100, Kd 12, Ki 80**. From hanging to
+   0 deg: overshoot 2.5 deg, settled in 3.9 s, ends at −0.1 ± 0.5 deg.
+   Range check 0 → +30 → −30 → 0 (8 s each): all four held within 1 deg
+   (−0.6, +30.5, −30.2, −0.2), settle 3.7 / 3.1 / 0.9 / 1.6 s.
+5. Weak spot: the step to +30 overshoots ~16–19 deg (peak +47). Not a D
+   problem (Kd 16 didn't help, made −30 wobblier); it's the P kick plus I
+   winding up during the climb, and the arm needing less power above level.
+   Kp 70 / Ki 60 was worse (overshot to 51, aborted). Ki 40 helped +30 only
+   slightly (15.9) and left 0 deg sitting 1–4 deg low.
+6. Late in the session the same command gave less thrust (cap 4100 couldn't
+   reach +30, which earlier needed ~2600): motor or adapter heating after many
+   full-power runs. Let it cool before more tuning.
+7. Startup jolt: in the first ~0.5 s from hanging the angle briefly reads
+   impossible values (−93 deg) because the accelerometer sees the arm's
+   acceleration, not just gravity. Harmless with these gains.
+
+Ideas for week 3 (not tried): ramp the target instead of stepping it, or
+limit how fast the I term can grow, to tame the +30 overshoot.
+
 ## Next steps
 
 1. Final check with the corrected test build: hanging ≈ −90, level ≈ 0,
