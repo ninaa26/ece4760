@@ -142,6 +142,14 @@ volatile float Kd = 0.0f ;
 volatile float i_term = 0.0f ;
 // TEST ONLY: highest command the controller may give the motor
 volatile int motor_cap = 6000 ;
+// TEST ONLY: overshoot fixes, all off by default
+volatile float ramp_rate = 0.0f ;   // r: target slides at this many deg/s (0 = jump)
+volatile float setpoint = 0.0f ;    // where the controller is aiming right now
+volatile float i_band = 0.0f ;      // b: only add up I within this many deg of the aim (0 = always)
+volatile int i_clamp = 0 ;          // c: 1 = don't add up I while the output is at its limit
+// f: feedforward. Power the arm needs to hold an angle, measured 23 Oct:
+// about ff_gain * cos(angle)^1.8, with ff_gain = 3850 (the power at level). 0 = off
+volatile float ff_gain = 0.0f ;
 
 
 void drawAxes() {
@@ -226,14 +234,32 @@ void on_pwm_wrap() {
 
     // --- PID: work out the motor command from the angle ---
     if (pid_on) {
+        // TEST: slide the aim point toward the target (or jump if ramp_rate is 0)
+        float step = ramp_rate * DT ;
+        if (ramp_rate <= 0.0f) setpoint = target ;
+        else if (setpoint < target - step) setpoint += step ;
+        else if (setpoint > target + step) setpoint -= step ;
+        else setpoint = target ;
         // How far off are we? Positive = the arm is too low
-        float error = target - angle ;
-        // I: add up the error over time (stored already multiplied by Ki)
-        i_term += Ki * error * DT ;
+        float error = setpoint - angle ;
+        float out_pd = Kp * error - Kd * angle_rate ;
+        // I: add up the error over time (stored already multiplied by Ki),
+        // unless the band or the clamp says not to
+        int add_i = (i_band <= 0.0f) || (fabsf(error) < i_band) ;
+        if (i_clamp) {
+            float would = out_pd + i_term ;   // (feedforward not included: test only)
+            if ((would >= motor_cap && error > 0) || (would <= 0 && error < 0)) add_i = 0 ;
+        }
+        if (add_i) i_term += Ki * error * DT ;
         if (i_term > WRAPVAL) i_term = WRAPVAL ;   // don't let it grow forever
         if (i_term < 0) i_term = 0 ;
         // P + I + D. For D, the gyro already measures how fast the angle changes
-        float out = Kp * error + i_term - Kd * angle_rate ;
+        float out = out_pd + i_term ;
+        // TEST: feedforward from the aim point (not the measured angle)
+        if (ff_gain > 0.0f) {
+            float c = cosf(setpoint * 0.0174533f) ;
+            if (c > 0.0f) out += ff_gain * powf(c, 1.8f) ;
+        }
         // The motor can only push up, from off to full power
         if (out < 0) out = 0 ;
         if (out > WRAPVAL) out = WRAPVAL ;
@@ -362,7 +388,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
             serial_read ;
             if (sscanf(pt_serial_in_buffer,"%f", &float_in) == 1) {
                 target = float_in ;
-                if (!pid_on) i_term = 0 ;   // fresh start if it was off
+                if (!pid_on) { i_term = 0 ; setpoint = angle ; }   // fresh start from where the arm is
                 pid_on = 1 ;
             }
         }
@@ -375,6 +401,18 @@ static PT_THREAD (protothread_serial(struct pt *pt))
                 if (classifier=='p') Kp = float_in ;
                 if (classifier=='i') Ki = float_in ;
                 if (classifier=='d') Kd = float_in ;
+            }
+        }
+        // r / b / c: (test only) target ramp deg/s, I band deg, I clamp 0/1
+        else if (classifier=='r' || classifier=='b' || classifier=='c' || classifier=='f') {
+            sprintf(pt_serial_out_buffer, "%c: ", classifier);
+            serial_write ;
+            serial_read ;
+            if (sscanf(pt_serial_in_buffer,"%f", &float_in) == 1) {
+                if (classifier=='r') ramp_rate = float_in ;
+                if (classifier=='b') i_band = float_in ;
+                if (classifier=='c') i_clamp = (float_in != 0.0f) ;
+                if (classifier=='f') ff_gain = float_in ;
             }
         }
         // x: (test only) cap the controller's motor command
@@ -400,8 +438,8 @@ static PT_THREAD (protothread_report(struct pt *pt))
 {
     PT_BEGIN(pt) ;
     while(1) {
-        printf("L,%lu,%.2f,%.1f,%d,%.1f,%d,%d,%d\r\n", (unsigned long)(time_us_32() / 1000),
-               angle, target, motor_cmd, angle_rate, pid_on, imu_errors, motor_cap) ;
+        printf("L,%lu,%.2f,%.1f,%d,%.1f,%d,%d,%d,%.1f\r\n", (unsigned long)(time_us_32() / 1000),
+               angle, target, motor_cmd, angle_rate, pid_on, imu_errors, motor_cap, setpoint) ;
         PT_YIELD_usec(50000) ;
     }
     PT_END(pt) ;

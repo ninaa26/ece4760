@@ -1,0 +1,72 @@
+Connected. Hand on the killswitch.
+
+Phase 1: coarse Kp x Kd grid, Ki = 0, target 0 deg
+Kp  20.0 Kd  10.0 Ki   0.0 ->   +0 | final  -63.8  wobble ± 0.1  drift  -0.0/s  overshoot   0.0  settle  0.6 s  full-power   0%  score 1000063.8
+Kp  20.0 Kd   6.0 Ki   0.0 ->   +0 | final  -63.5  wobble ± 0.2  drift  +0.1/s  overshoot   0.0  settle  0.5 s  full-power   0%  score 1000063.5
+Kp  20.0 Kd   3.0 Ki   0.0 ->   +0 | final  -62.0  wobble ± 0.2  drift  +0.1/s  overshoot   0.0  settle  1.0 s  full-power   0%  score 1000062.0
+Kp  20.0 Kd   0.0 Ki   0.0 ->   +0 | final  -61.4  wobble ± 0.3  drift  +0.0/s  overshoot   0.0  settle  4.1 s  full-power   0%  score 1000061.4
+Kp  30.0 Kd  10.0 Ki   0.0 ->   +0 | final  -56.7  wobble ± 0.1  drift  +0.0/s  overshoot   0.0  settle  0.5 s  full-power   0%  score 1000056.7
+Kp  30.0 Kd   6.0 Ki   0.0 ->   +0 | final  -55.7  wobble ± 0.2  drift  -0.1/s  overshoot   0.0  settle  0.7 s  full-power   0%  score 1000055.7
+Kp  30.0 Kd   3.0 Ki   0.0 ->   +0 | final  -54.8  wobble ± 0.3  drift  +0.1/s  overshoot   0.0  settle  1.3 s  full-power   0%  score  111.4
+Kp  30.0 Kd   0.0 Ki   0.0 ->   +0 | final  -53.8  wobble ± 0.7  drift  -0.0/s  overshoot   0.0  settle  5.7 s  full-power   0%  score  112.5
+Kp  45.0 Kd  10.0 Ki   0.0 ->   +0 | final  -48.2  wobble ± 0.3  drift  +0.2/s  overshoot   0.0  settle  0.7 s  full-power   0%  score   98.3
+Kp  45.0 Kd   6.0 Ki   0.0 ->   +0 | final  -46.8  wobble ± 0.2  drift  +0.0/s  overshoot   0.0  settle  1.0 s  full-power   0%  score   95.0
+Kp  45.0 Kd   3.0 Ki   0.0 ->   +0 | final  -45.9  wobble ± 0.3  drift  +0.0/s  overshoot   0.0  settle  1.6 s  full-power   0%  score   93.7
+Kp  45.0 Kd   0.0 Ki   0.0 ->   +0 | final  -44.7  wobble ± 1.5  drift  -0.3/s  overshoot   0.0  settle  8.2 s  full-power   0%  score   98.8
+Kp  60.0 Kd  10.0 Ki   0.0 ->   +0 | final  -41.0  wobble ± 0.4  drift  +0.2/s  overshoot   0.0  settle  0.7 s  full-power   0%  score   84.1
+Kp  60.0 Kd   6.0 Ki   0.0 ->   +0 | final  -40.2  wobble ± 0.3  drift  -0.1/s  overshoot   0.0  settle  1.2 s  full-power   0%  score   82.3
+Kp  60.0 Kd   3.0 Ki   0.0 ->   +0 | final  -38.9  wobble ± 0.3  drift  +0.0/s  overshoot   0.0  settle  2.0 s  full-power   0%  score   79.9
+Kp  60.0 Kd   0.0 Ki   0.0 ->   +0 | final  -39.3  wobble ± 1.3  drift  -0.1/s  overshoot   0.0  settle  8.1 s  full-power   0%  score   86.9
+Kp  80.0 Kd  10.0 Ki   0.0 ->   +0 | final  -35.1  wobble ± 0.3  drift  -0.1/s  overshoot   0.0  settle  2.2 s  full-power   6%  score   72.5
+Kp  80.0 Kd   6.0 Ki   0.0 ->   +0 | final  -34.2  wobble ± 0.3  drift  +0.0/s  overshoot   0.0  settle  2.6 s  full-power   5%  score   70.7
+Kp  80.0 Kd   3.0 Ki   0.0 ->   +0 | final  -76.8  wobble ± 9.7  drift  +0.9/s  overshoot   0.0  settle 12.0 s  full-power  54%  score 1000076.8
+Kp  80.0 Kd   0.0 Ki   0.0 ->   +0 | final  -77.1  wobble ± 9.5  drift  +1.1/s  overshoot   0.0  settle 12.0 s  full-power  55%  score 1000077.1
+
+Phase 2: refine Kp and Kd around (80, 6, 0)
+Kp 106.4 Kd   6.0 Ki   0.0 ->   +0 | final  -77.3  wobble ±10.2  drift  +0.6/s  overshoot   0.0  settle 12.0 s  full-power  92%  score 1000077.3
+Kp  80.0 Kd   4.5 Ki   0.0 ->   +0 | final  -77.3  wobble ± 9.8  drift  +2.0/s  overshoot   0.0  settle 12.0 s  full-power  55%  score 1000077.3
+Kp  80.0 Kd   8.0 Ki   0.0 ->   +0 | final  -33.5  wobble ± 0.3  drift  -0.1/s  overshoot   0.0  settle  5.5 s  full-power  21%  score   71.0
+
+Phase 3: add Ki to (80, 6, 0)
+Kp  80.0 Kd   6.0 Ki   5.0 ->   +0 | final  -76.8  wobble ± 9.9  drift  +1.3/s  overshoot   0.0  settle 16.0 s  full-power  90%  score 1000076.8
+Kp  80.0 Kd   6.0 Ki  10.0 ->   +0 | final  -77.0  wobble ± 9.7  drift  +2.1/s  overshoot   0.0  settle 16.0 s  full-power  94%  score 1000077.0
+Kp  80.0 Kd   6.0 Ki  20.0 ->   +0 | final  -77.1  wobble ± 9.9  drift  +1.1/s  overshoot   0.0  settle 16.0 s  full-power  97%  score 1000077.1
+Kp  80.0 Kd   6.0 Ki  40.0 ->   +0 | final  -77.0  wobble ± 9.8  drift  +2.2/s  overshoot   0.0  settle 16.0 s  full-power  97%  score 1000077.0
+
+Range check with Kp 80 Kd 6 Ki 0: 0 -> +30 -> -30 -> 0 deg
+  Kp  80.0 Kd   6.0 Ki   0.0 ->   +0 | final  -77.0  wobble ± 9.6  drift  +1.3/s  overshoot   0.0  settle 10.0 s  full-power  53%  score 1000077.0
+  Kp  80.0 Kd   6.0 Ki   0.0 ->  +30 | final  -76.9  wobble ± 9.2  drift  -4.8/s  overshoot   0.0  settle 10.0 s  full-power  99%  score 1000106.9
+  Kp  80.0 Kd   6.0 Ki   0.0 ->  -30 | final  -53.1  wobble ± 0.2  drift  -0.1/s  overshoot   0.0  settle  2.0 s  full-power   3%  score   48.2
+  Kp  80.0 Kd   6.0 Ki   0.0 ->   +0 | final  -36.1  wobble ± 0.3  drift  +0.2/s  overshoot   0.0  settle  0.6 s  full-power   0%  score   74.1
+
+=== Ranked (best first) ===
+Kp  80.0 Kd   6.0 Ki   0.0 ->   +0 | final  -34.2  wobble ± 0.3  drift  +0.0/s  overshoot   0.0  settle  2.6 s  full-power   5%  score   70.7
+Kp  80.0 Kd   8.0 Ki   0.0 ->   +0 | final  -33.5  wobble ± 0.3  drift  -0.1/s  overshoot   0.0  settle  5.5 s  full-power  21%  score   71.0
+Kp  80.0 Kd  10.0 Ki   0.0 ->   +0 | final  -35.1  wobble ± 0.3  drift  -0.1/s  overshoot   0.0  settle  2.2 s  full-power   6%  score   72.5
+Kp  60.0 Kd   3.0 Ki   0.0 ->   +0 | final  -38.9  wobble ± 0.3  drift  +0.0/s  overshoot   0.0  settle  2.0 s  full-power   0%  score   79.9
+Kp  60.0 Kd   6.0 Ki   0.0 ->   +0 | final  -40.2  wobble ± 0.3  drift  -0.1/s  overshoot   0.0  settle  1.2 s  full-power   0%  score   82.3
+Kp  60.0 Kd  10.0 Ki   0.0 ->   +0 | final  -41.0  wobble ± 0.4  drift  +0.2/s  overshoot   0.0  settle  0.7 s  full-power   0%  score   84.1
+Kp  60.0 Kd   0.0 Ki   0.0 ->   +0 | final  -39.3  wobble ± 1.3  drift  -0.1/s  overshoot   0.0  settle  8.1 s  full-power   0%  score   86.9
+Kp  45.0 Kd   3.0 Ki   0.0 ->   +0 | final  -45.9  wobble ± 0.3  drift  +0.0/s  overshoot   0.0  settle  1.6 s  full-power   0%  score   93.7
+Kp  45.0 Kd   6.0 Ki   0.0 ->   +0 | final  -46.8  wobble ± 0.2  drift  +0.0/s  overshoot   0.0  settle  1.0 s  full-power   0%  score   95.0
+Kp  45.0 Kd  10.0 Ki   0.0 ->   +0 | final  -48.2  wobble ± 0.3  drift  +0.2/s  overshoot   0.0  settle  0.7 s  full-power   0%  score   98.3
+Kp  45.0 Kd   0.0 Ki   0.0 ->   +0 | final  -44.7  wobble ± 1.5  drift  -0.3/s  overshoot   0.0  settle  8.2 s  full-power   0%  score   98.8
+Kp  30.0 Kd   3.0 Ki   0.0 ->   +0 | final  -54.8  wobble ± 0.3  drift  +0.1/s  overshoot   0.0  settle  1.3 s  full-power   0%  score  111.4
+Kp  30.0 Kd   0.0 Ki   0.0 ->   +0 | final  -53.8  wobble ± 0.7  drift  -0.0/s  overshoot   0.0  settle  5.7 s  full-power   0%  score  112.5
+Kp  30.0 Kd   6.0 Ki   0.0 ->   +0 | final  -55.7  wobble ± 0.2  drift  -0.1/s  overshoot   0.0  settle  0.7 s  full-power   0%  score 1000055.7
+Kp  30.0 Kd  10.0 Ki   0.0 ->   +0 | final  -56.7  wobble ± 0.1  drift  +0.0/s  overshoot   0.0  settle  0.5 s  full-power   0%  score 1000056.7
+Kp  20.0 Kd   0.0 Ki   0.0 ->   +0 | final  -61.4  wobble ± 0.3  drift  +0.0/s  overshoot   0.0  settle  4.1 s  full-power   0%  score 1000061.4
+Kp  20.0 Kd   3.0 Ki   0.0 ->   +0 | final  -62.0  wobble ± 0.2  drift  +0.1/s  overshoot   0.0  settle  1.0 s  full-power   0%  score 1000062.0
+Kp  20.0 Kd   6.0 Ki   0.0 ->   +0 | final  -63.5  wobble ± 0.2  drift  +0.1/s  overshoot   0.0  settle  0.5 s  full-power   0%  score 1000063.5
+Kp  20.0 Kd  10.0 Ki   0.0 ->   +0 | final  -63.8  wobble ± 0.1  drift  -0.0/s  overshoot   0.0  settle  0.6 s  full-power   0%  score 1000063.8
+Kp  80.0 Kd   3.0 Ki   0.0 ->   +0 | final  -76.8  wobble ± 9.7  drift  +0.9/s  overshoot   0.0  settle 12.0 s  full-power  54%  score 1000076.8
+Kp  80.0 Kd   6.0 Ki   5.0 ->   +0 | final  -76.8  wobble ± 9.9  drift  +1.3/s  overshoot   0.0  settle 16.0 s  full-power  90%  score 1000076.8
+Kp  80.0 Kd   6.0 Ki  40.0 ->   +0 | final  -77.0  wobble ± 9.8  drift  +2.2/s  overshoot   0.0  settle 16.0 s  full-power  97%  score 1000077.0
+Kp  80.0 Kd   6.0 Ki  10.0 ->   +0 | final  -77.0  wobble ± 9.7  drift  +2.1/s  overshoot   0.0  settle 16.0 s  full-power  94%  score 1000077.0
+Kp  80.0 Kd   6.0 Ki  20.0 ->   +0 | final  -77.1  wobble ± 9.9  drift  +1.1/s  overshoot   0.0  settle 16.0 s  full-power  97%  score 1000077.1
+Kp  80.0 Kd   0.0 Ki   0.0 ->   +0 | final  -77.1  wobble ± 9.5  drift  +1.1/s  overshoot   0.0  settle 12.0 s  full-power  55%  score 1000077.1
+Kp  80.0 Kd   4.5 Ki   0.0 ->   +0 | final  -77.3  wobble ± 9.8  drift  +2.0/s  overshoot   0.0  settle 12.0 s  full-power  55%  score 1000077.3
+Kp 106.4 Kd   6.0 Ki   0.0 ->   +0 | final  -77.3  wobble ±10.2  drift  +0.6/s  overshoot   0.0  settle 12.0 s  full-power  92%  score 1000077.3
+
+Best found: Kp 80  Kd 6  Ki 0
+Range check: problems at [0, 30, -30, 0] deg

@@ -4,14 +4,16 @@
 Meant to be run repeatedly by a person (or Claude) who decides the next
 experiment from the last result. Needs the trial firmware
 (tools/pid-tuning/firmware-trial), which streams
-"L,<ms>,<angle>,<target>,<motor>,<rate>,<pid_on>,<imu_errors>,<cap>" at 20 Hz,
-cuts the motor itself above +60 deg, and has an x command (motor cap).
+"L,<ms>,<angle>,<target>,<motor>,<rate>,<pid_on>,<imu_errors>,<cap>[,<aim>]" at
+20 Hz, cuts the motor itself above +60 deg, and has x (motor cap), r (target
+ramp, deg/s), b (I band, deg), c (I clamp, 0/1) and f (feedforward gain) commands.
 
     python3 tools/pid-tuning/pid-trial.py --kp 80 --kd 6                    # target 0, 12 s
     python3 tools/pid-tuning/pid-trial.py --kp 60 --kd 6 --ki 10 --secs 16
     python3 tools/pid-tuning/pid-trial.py --kp 60 --kd 6 --cap 4500
     python3 tools/pid-tuning/pid-trial.py --kp 60 --kd 6 --ki 10 --targets 0,30,-30,0 --secs 8
     python3 tools/pid-tuning/pid-trial.py --manual 3600 --secs 8            # open loop, no PID
+    python3 tools/pid-tuning/pid-trial.py --kp 100 --kd 12 --ki 80 --ramp 40 --targets 0,30
 
 Every run starts with the motor off and the arm hanging still, and ends with
 the motor off. The script also stops the motor above --abort degrees.
@@ -27,6 +29,10 @@ ap.add_argument("--targets", default="0", help="comma list, held --secs each, no
 ap.add_argument("--secs", type=float, default=12)
 ap.add_argument("--cap", type=int, default=6000, help="highest motor command (0-6000)")
 ap.add_argument("--manual", type=int, help="open loop: set this duty instead of PID")
+ap.add_argument("--ramp", type=float, default=0, help="target slides at this many deg/s (0 = jump)")
+ap.add_argument("--iband", type=float, default=0, help="only add up I within this many deg (0 = always)")
+ap.add_argument("--clamp", type=int, default=0, help="1 = don't add up I while the output is at its limit")
+ap.add_argument("--ff", type=float, default=0, help="feedforward gain: adds ff*cos(target)^1.8 (0 = off)")
 ap.add_argument("--abort", type=float, default=50)
 ap.add_argument("--trace", type=float, default=0.5, help="seconds between trace lines (0 = none)")
 args = ap.parse_args()
@@ -61,7 +67,7 @@ def reader():
         *lines, buf = buf.split("\n")
         for line in lines:
             f = line.strip().split(",")
-            if len(f) == 9 and f[0] == "L":
+            if len(f) in (9, 10) and f[0] == "L":
                 try:
                     row = (time.time(), float(f[2]), float(f[3]), int(f[4]), float(f[5]),
                            int(f[6]), int(f[7]), int(f[8]))
@@ -156,6 +162,7 @@ def metrics(seg, target):
 
 
 result = dict(kp=args.kp, kd=args.kd, ki=args.ki, cap=args.cap, manual=args.manual,
+              ramp=args.ramp, iband=args.iband, clamp=args.clamp, ff=args.ff,
               targets=args.targets, secs=args.secs, when=time.strftime("%H:%M:%S"))
 segments, why = [], ""
 try:
@@ -168,6 +175,10 @@ try:
         raise SystemExit("Pico went quiet.")
     result["note"] = why
     send("x", args.cap)
+    send("r", args.ramp)
+    send("b", args.iband)
+    send("c", args.clamp)
+    send("f", args.ff)
     if args.manual is None:
         send("p", args.kp)
         send("d", args.kd)
