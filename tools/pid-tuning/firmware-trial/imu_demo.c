@@ -144,6 +144,8 @@ volatile float i_term = 0.0f ;
 volatile int motor_cap = 6000 ;
 // TEST ONLY: overshoot fixes, all off by default
 volatile float ramp_rate = 0.0f ;   // r: target slides at this many deg/s (0 = jump)
+volatile float start_ramp = 0.0f ;  // u: like r, but only on a fresh start until the target is reached
+volatile int starting = 0 ;         // 1 from a fresh start until the aim point reaches the target
 volatile float setpoint = 0.0f ;    // where the controller is aiming right now
 volatile float i_band = 0.0f ;      // b: only add up I within this many deg of the aim (0 = always)
 volatile int i_clamp = 0 ;          // c: 1 = don't add up I while the output is at its limit
@@ -235,11 +237,14 @@ void on_pwm_wrap() {
     // --- PID: work out the motor command from the angle ---
     if (pid_on) {
         // TEST: slide the aim point toward the target (or jump if ramp_rate is 0)
-        float step = ramp_rate * DT ;
-        if (ramp_rate <= 0.0f) setpoint = target ;
+        // (a fresh start uses start_ramp if it is set, until the target is reached)
+        float rate = (starting && start_ramp > 0.0f) ? start_ramp : ramp_rate ;
+        float step = rate * DT ;
+        if (rate <= 0.0f) setpoint = target ;
         else if (setpoint < target - step) setpoint += step ;
         else if (setpoint > target + step) setpoint -= step ;
         else setpoint = target ;
+        if (setpoint == target) starting = 0 ;
         // How far off are we? Positive = the arm is too low
         float error = setpoint - angle ;
         float out_pd = Kp * error - Kd * angle_rate ;
@@ -252,7 +257,8 @@ void on_pwm_wrap() {
         }
         if (add_i) i_term += Ki * error * DT ;
         if (i_term > WRAPVAL) i_term = WRAPVAL ;   // don't let it grow forever
-        if (i_term < 0) i_term = 0 ;
+        // With feedforward, I may go below 0 to trim a guess that's too high
+        if (i_term < -ff_gain) i_term = -ff_gain ;
         // P + I + D. For D, the gyro already measures how fast the angle changes
         float out = out_pd + i_term ;
         // TEST: feedforward from the aim point (not the measured angle)
@@ -388,7 +394,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
             serial_read ;
             if (sscanf(pt_serial_in_buffer,"%f", &float_in) == 1) {
                 target = float_in ;
-                if (!pid_on) { i_term = 0 ; setpoint = angle ; }   // fresh start from where the arm is
+                if (!pid_on) { i_term = 0 ; setpoint = angle ; starting = 1 ; }   // fresh start from where the arm is
                 pid_on = 1 ;
             }
         }
@@ -404,7 +410,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
             }
         }
         // r / b / c: (test only) target ramp deg/s, I band deg, I clamp 0/1
-        else if (classifier=='r' || classifier=='b' || classifier=='c' || classifier=='f') {
+        else if (classifier=='r' || classifier=='b' || classifier=='c' || classifier=='f' || classifier=='u') {
             sprintf(pt_serial_out_buffer, "%c: ", classifier);
             serial_write ;
             serial_read ;
@@ -413,6 +419,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
                 if (classifier=='b') i_band = float_in ;
                 if (classifier=='c') i_clamp = (float_in != 0.0f) ;
                 if (classifier=='f') ff_gain = float_in ;
+                if (classifier=='u') start_ramp = float_in ;
             }
         }
         // x: (test only) cap the controller's motor command
