@@ -268,6 +268,35 @@ screw it went back into. Replaced with an IRF520 (needs ~10 V gate; the board
 gives ~11 V). Its first reading at command 0 was −67: check the fan is still
 and measure the gate voltage (G to PS GND ≈ 0 V at command 0) before running.
 
+### IRF520 runs (23 Oct, ~22:00)
+
+The fan stays still at command 0 with the IRF520: −67 is just the rest angle
+on the new mount. The first runs did nothing because the motor power wasn't
+plugged in. Then, in order:
+
+| Time | Command | Result |
+| --- | --- | --- |
+| 22:00 | manual 3000 | −36 (old MOSFET, cold: −16) |
+| 22:01–02 | PID cap 4500, target 0 | stuck at −17/−18 (stall stop) |
+| 22:02 | manual 5000 | +30, held |
+| 22:03 | PID cap 5500, target 0 | final +0.6, overshoot 2.8, settle 6.5 s, **hold ≈ 4760** (was 3560) |
+| 22:03 | PID cap 5500, FF 4750, startup ramp 60, 0 → 30 | 0: settle 1.6 s, hold 4800; +30: stuck at +5 at 5500 (stall stop) |
+| 22:07 | manual 5000, after the IRF520 cooled | +23 |
+| 22:12 | same as 22:03 FF run | 0: stuck at −8 at 5500 (stall stop) |
+
+The same command lifts the arm less every run, and cooling brings back only
+part of it. The IRF520 was "a bit hot" after ~30 s of running. Supply at rest:
+CH1 12 V, CH2 5 V, CV. Most likely the IRF520 is only half on (it needs ~10 V
+on the gate; this board was designed for the logic-level IRLB8721) and is
+being damaged the same way as the first part. **Stopped testing.** Next:
+measure G to PS GND during a steady manual 5000 (expect ≈ 9–10 V average if
+the gate drive is good); fit an IRLB8721 (or IRLZ44N / IRL540N); check the
+4N35 if the gate voltage is low.
+
+`pid-trial.py` now stops the motor after 3 s at full command if the arm hasn't
+moved 3 deg and is still low (`--stall`), and refuses to start if the arm
+isn't hanging still with the motor off.
+
 ## Next steps
 
 1. Final check with the corrected test build: hanging ≈ −90, level ≈ 0,
