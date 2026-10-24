@@ -243,6 +243,17 @@ What we learned:
 Next: after cooling, sanity trial, then repeat the Kd 16 sequence; if +30
 still overshoots, try a lower Ki (40) with FF.
 
+**Later the same evening: motor board MOSFET looks damaged.** After the
+student rewired everything (new colours, new mount; wiring checked from
+photos, IMU reads −75 hanging with 0 errors), the fan spun with the Pico
+commanding 0, **and kept spinning with the killswitch off**. The sanity trial
+(Kp 100 Kd 12 Ki 80 cap 4500, target 0) sat at −42 at full command for 14 s.
+The killswitch only removes the gate drive, so a fan that still spins means
+current flows drain → source without it: the IRLB8721 (which got hot after the
+loose-cable run) is most likely leaking. No tuning until the MOSFET or the
+board is replaced; then re-run the sanity trial (holding level took ≈3560
+before the damage).
+
 ## Next steps
 
 1. Final check with the corrected test build: hanging ≈ −90, level ≈ 0,
