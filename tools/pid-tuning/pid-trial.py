@@ -175,6 +175,11 @@ try:
     why = wait_hanging()
     if why == "pico quiet":
         raise SystemExit("Pico went quiet.")
+    if why:
+        # Motor commanded off but the arm isn't hanging still: the fan may be
+        # running anyway (leaking MOSFET, 23 Oct). Don't start.
+        raise SystemExit("Arm not hanging still with the motor off. Is the fan "
+                         "spinning at command 0? Check the MOSFET before running.")
     result["note"] = why
     send("x", args.cap)
     send("r", args.ramp)
@@ -207,12 +212,14 @@ try:
                 abort = "PICO QUIET - use the killswitch"
                 break
             s = latest()
-            # Stall: near full command for --stall seconds but the arm hasn't
-            # moved 3 deg (loose wire, weak supply, broken MOSFET). Stop before
-            # the MOSFET cooks.
+            # Stall: near full command for --stall seconds, the arm hasn't
+            # moved 3 deg and is still low (below the target, or near the bottom
+            # in manual mode): loose wire, weak supply, broken MOSFET. Stop
+            # before the MOSFET cooks.
             recent = [r for r in recent if s[0] - r[0] <= args.stall] + [(s[0], s[1], s[3])]
             full = 0.95 * (args.cap if args.manual is None else max(args.manual, 1))
-            if (args.stall > 0 and s[0] - recent[0][0] >= args.stall - 0.1
+            low = (s[1] < tg - 5) if args.manual is None else (s[1] < -50)
+            if (args.stall > 0 and low and s[0] - recent[0][0] >= args.stall - 0.1
                     and all(r[2] >= full for r in recent)
                     and max(r[1] for r in recent) - min(r[1] for r in recent) < 3.0):
                 abort = f"STALL: full power {args.stall:.0f} s, arm not moving"
