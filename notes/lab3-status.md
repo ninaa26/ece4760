@@ -254,6 +254,20 @@ loose-cable run) is most likely leaking. No tuning until the MOSFET or the
 board is replaced; then re-run the sanity trial (holding level took ≈3560
 before the damage).
 
+When it failed (from the trial log): at ~17:53, after the loose-cable run, the
+arm hung still at −78.3 with command 0 (healthy). The student then put the
+loose cable back. At 17:57 the script's "wait for the arm to hang still" timed
+out (25 s, command 0) and the run started from about −49: the fan was already
+pushing hard with no command. So the MOSFET failed **while the cable was being
+reconnected**, not from the tuning runs. Normal running can't cook it: 1 kHz
+PWM (150 MHz / 25 / 6000) as in the handout, ≈0.1–0.3 W of switching +
+conduction loss. The "hot board" was the result: a half-on MOSFET at ~1 A is a
+2–3 W heater. Its leak was worse hot (−49 at command 0) than cold (−75), as a
+damaged junction's is. Open questions: which cable, was the power on, which
+screw it went back into. Replaced with an IRF520 (needs ~10 V gate; the board
+gives ~11 V). Its first reading at command 0 was −67: check the fan is still
+and measure the gate voltage (G to PS GND ≈ 0 V at command 0) before running.
+
 ## Next steps
 
 1. Final check with the corrected test build: hanging ≈ −90, level ≈ 0,
