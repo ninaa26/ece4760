@@ -35,6 +35,7 @@ ap.add_argument("--iband", type=float, default=0, help="only add up I within thi
 ap.add_argument("--clamp", type=int, default=0, help="1 = don't add up I while the output is at its limit")
 ap.add_argument("--ff", type=float, default=0, help="feedforward gain: adds ff*cos(target)^1.8 (0 = off)")
 ap.add_argument("--abort", type=float, default=50)
+ap.add_argument("--stall", type=float, default=3, help="stop after this many s at full command with the arm not moving (0 = off)")
 ap.add_argument("--trace", type=float, default=0.5, help="seconds between trace lines (0 = none)")
 args = ap.parse_args()
 
@@ -199,12 +200,23 @@ try:
         else:
             send("m", args.manual)
         abort = ""
+        recent = []   # (time, angle, motor) for the stall check
         while time.time() - t0 < args.secs:
             time.sleep(0.05)
             if not alive():
                 abort = "PICO QUIET - use the killswitch"
                 break
             s = latest()
+            # Stall: near full command for --stall seconds but the arm hasn't
+            # moved 3 deg (loose wire, weak supply, broken MOSFET). Stop before
+            # the MOSFET cooks.
+            recent = [r for r in recent if s[0] - r[0] <= args.stall] + [(s[0], s[1], s[3])]
+            full = 0.95 * (args.cap if args.manual is None else max(args.manual, 1))
+            if (args.stall > 0 and s[0] - recent[0][0] >= args.stall - 0.1
+                    and all(r[2] >= full for r in recent)
+                    and max(r[1] for r in recent) - min(r[1] for r in recent) < 3.0):
+                abort = f"STALL: full power {args.stall:.0f} s, arm not moving"
+                break
             if args.trace and s[0] - last_trace >= args.trace:
                 last_trace = s[0]
                 print(f"{s[0] - t0:5.1f} {s[1]:6.1f} {s[3]:6d} {s[4]:6.1f} {s[6]:6d}", flush=True)
