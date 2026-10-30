@@ -305,3 +305,16 @@ isn't hanging still with the motor off.
    edit (it isn't in the guide yet) and put the axis values above in the
    student's `week2_IMU_Demo/imu_demo.c`.
 3. Week 1 bench numbers (hover duty etc.) are still `___` in the guide.
+
+## Week 2 / week 3 code in the group repo (30 Oct)
+
+- `week2_IMU_Demo`: motor cap 5500 and an `x` command (set the cap over
+  serial), for demoing with the IRF520.
+- `week3_Helicopter/helicopter.c`: week 3 demo for the IRLB8721, built on the
+  week 2 code. Button on GP10 (pin 14) to GND, internal pull-up, 30 ms
+  debounce: held = motor off; released = 0, +30 at 5 s, −30 at 10 s, 0 at
+  15 s. Gains start at Kp 100 Ki 80 Kd 12; feedforward 3600·cos(aim)^1.8
+  (`f`, 0 = off); 60 deg/s startup ramp; cap 4500 (`x`); plot at 40 ms per
+  point. Compiled from a fresh clone, **not yet run on the board**. First
+  bench run: check the button, then the whole sequence; the feedforward gain
+  may need adjusting to that day's hold power (sanity trial).
