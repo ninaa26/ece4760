@@ -14,6 +14,7 @@ laptop.
 | --- | --- | --- |
 | Final project proposal (main tab + "Test procedures" tab) | https://claude.ai/artifact/W9TnAD1FCV8HWrH9HiFUyB | `proposal.md`, `test-procedures.md` |
 | Team pitch (for the group meeting) | https://claude.ai/artifact/1xSSAcWzxP5pNcSSc5nWW4 | `team-pitch.md` |
+| Pet spec (desk-pet personality on top of Mini-Sat) | https://claude.ai/artifact/5YcCHzAxkoehVV6yxvTqoj | `pet-spec.md` |
 
 The live docs are the source of truth; the copies here are snapshots from
 29 Oct 2026 without the diagrams. Read the live doc before editing, and
@@ -49,6 +50,17 @@ Key decisions and why:
   tests are built one at a time. Core T01–T09, stretch T10–T16. Limits are `___`
   until measured.
 
+## Desk-pet direction (30 Oct 2026)
+
+The teammates like a cute desk-pet idea, so `pet-spec.md` adds personality
+without dropping the test-engineering core: an SSD1306 OLED face on the
+satellite (on I2C1, GP14/GP15, redrawn on core 1) whose 12 moods are set only
+by measured states, each checked by a test (T17 mood mapping, T18 no false
+happiness, T19 health certificate). The student picked the **wake-up
+self-test** (power-on built-in test: eyes open = IMU OK, wiggle = wheel OK and
+turning the right way, squint = panels OK, then hello) with T20 to prove it
+catches planted faults. T17–T20 are not yet in the proposal's catalogue.
+
 ## Ideas from the planning chat not yet in the docs
 
 - **Depth upgrades** to stand out (add after the core tests pass):
@@ -60,9 +72,7 @@ Key decisions and why:
   3. Control loop on core 0 from a timer interrupt, radio on core 1; GPIO toggle
      on the scope to measure loop time and jitter.
   4. Live scrolling plots on the VGA ground station.
-- **Satellite with a face**: an animated face on the ground station (sleepy in
-  eclipse, dizzy when tumbling, happy on the sun), offered as a way to merge a
-  teammate's desktop-pet idea.
+- **Satellite with a face**: now worked out in `pet-spec.md` (above).
 
 ## Week-1 checks before committing
 
