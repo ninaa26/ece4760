@@ -8,7 +8,9 @@ in chat or memory.
 **Start here for Lab 2:** `notes/lab2-status.md` (where things stand, what's
 next, what hasn't been checked on the board). **Lab 3:** start with
 `notes/lab3-handover.md` (state, bench, tools, next experiment), then
-`notes/lab3-status.md` (all measurements).
+`notes/lab3-status.md` (all measurements). **Final project (Mini-Sat):**
+`notes/final-project/README.md` (design, decisions, links to the live
+proposal and team pitch docs).
 
 ## How to work with the student
 
